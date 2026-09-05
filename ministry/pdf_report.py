@@ -18,14 +18,14 @@ from reportlab.graphics import renderPDF
 from reportlab.lib.colors import HexColor
 from datetime import date, datetime
 
-# Brand colors
-NAVY = HexColor('#0a0e1a')
-DARK_BLUE = HexColor('#0f1629')
+# Brand colors (primary is deep teal; NAVY name kept for backwards compat).
+NAVY = HexColor('#0d5e64')
+DARK_BLUE = HexColor('#0f6a70')
 GOLD = HexColor('#c49a1a')
 WHITE = HexColor('#ffffff')
 LIGHT_GRAY = HexColor('#e8eaf6')
 MID_GRAY = HexColor('#8b92a5')
-DARK_GRAY = HexColor('#1e2640')
+DARK_GRAY = HexColor('#0a4a4f')
 
 CAT_COLORS = {
     'gospel': HexColor('#c49a1a'),
@@ -167,7 +167,7 @@ def generate_pdf_report(output):
         ('RIGHTPADDING', (0, 0), (-1, -1), 6),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#1e2640')),
+        ('GRID', (0, 0), (-1, -1), 0.5, HexColor('#0a4a4f')),
         ('ROUNDEDCORNERS', [4, 4, 4, 4]),
     ]))
     story.append(metrics_table)
@@ -349,7 +349,7 @@ def _make_progress_bar(pct, current, total, width):
     d = Drawing(width, bar_height + 30)
 
     # Background
-    d.add(Rect(0, 10, width, bar_height, fillColor=HexColor('#1e2640'), strokeColor=None))
+    d.add(Rect(0, 10, width, bar_height, fillColor=HexColor('#0a4a4f'), strokeColor=None))
 
     # Fill
     fill_width = max(2, width * pct / 100)
