@@ -113,9 +113,9 @@ const universities = {{ uni_data_json|safe }};
 // Dark tile layer
 const map = L.map('map', { zoomControl: true }).setView([-6.8, 39.26], 13);
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  attribution: '© OpenStreetMap, © CARTO',
-  subdomains: 'abcd', maxZoom: 19
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  maxZoom: 19
 }).addTo(map);
 
 const markers = {};
