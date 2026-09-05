@@ -1,0 +1,35 @@
+{% extends 'ministry/base.html' %}
+{% block title %}Delete Student{% endblock %}
+{% block topbar_title %}Delete Student{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;margin:60px auto;text-align:center">
+  <div class="card-ci fade-up">
+    <div class="card-ci-body" style="padding:40px">
+      <div style="width:64px;height:64px;border-radius:50%;background:rgba(192,57,43,0.12);
+                  border:1px solid rgba(192,57,43,0.3);display:flex;align-items:center;
+                  justify-content:center;margin:0 auto 20px;font-size:26px;color:#e74c3c">
+        <i class="bi bi-trash-fill"></i>
+      </div>
+      <h2 style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:10px;color:var(--white)">
+        Remove Student?
+      </h2>
+      <p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:24px">
+        You are about to permanently remove <strong style="color:var(--text)">{{ student.full_name }}</strong>
+        and all their attendance records. This cannot be undone.
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        <div style="display:flex;gap:12px;justify-content:center">
+          <a href="{% url 'student_detail' student.pk %}" class="btn-ci btn-ci-outline">
+            <i class="bi bi-arrow-left"></i> Cancel
+          </a>
+          <button type="submit" class="btn-ci btn-ci-danger">
+            <i class="bi bi-trash-fill"></i> Yes, Remove
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

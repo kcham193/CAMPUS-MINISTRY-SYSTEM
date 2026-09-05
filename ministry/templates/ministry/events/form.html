@@ -1,0 +1,67 @@
+{% extends 'ministry/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block topbar_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-ci fade-up">
+  <a href="{% url 'event_list' %}">Events</a>
+  {% if event %}<span>/</span><a href="{% url 'event_detail' event.pk %}">{{ event.title }}</a>{% endif %}
+  <span>/</span> {{ title }}
+</div>
+<div style="max-width:680px;margin:20px auto">
+  <div class="card-ci fade-up">
+    <div class="card-ci-header">
+      <div class="card-ci-title"><i class="bi bi-calendar-plus-fill" style="color:var(--gold)"></i> {{ title }}</div>
+    </div>
+    <div class="card-ci-body">
+      <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom:18px">
+          <label>Event Title *</label>
+          {{ form.title }}
+          {% if form.title.errors %}<div style="color:#e74c3c;font-size:11px;margin-top:4px">{{ form.title.errors.0 }}</div>{% endif %}
+        </div>
+        <div class="grid-2" style="gap:18px;margin-bottom:18px">
+          <div>
+            <label>Event Type</label>
+            {{ form.event_type }}
+          </div>
+          <div>
+            <label>Date *</label>
+            {{ form.event_date }}
+          </div>
+        </div>
+        <div class="grid-2" style="gap:18px;margin-bottom:18px">
+          <div>
+            <label>Time</label>
+            {{ form.event_time }}
+          </div>
+          <div>
+            <label>Expected Attendance</label>
+            {{ form.expected_attendance }}
+          </div>
+        </div>
+        <div style="margin-bottom:18px">
+          <label>Location / Venue *</label>
+          {{ form.location }}
+        </div>
+        <div style="margin-bottom:18px">
+          <label>Description</label>
+          {{ form.description }}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;
+                    background:var(--card2);border-radius:10px;padding:12px 16px;border:1px solid var(--border)">
+          {{ form.is_completed }}
+          <label style="margin:0;font-size:13.5px;color:var(--text);cursor:pointer">Mark as completed</label>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+          <a href="{% if event %}{% url 'event_detail' event.pk %}{% else %}{% url 'event_list' %}{% endif %}"
+             class="btn-ci btn-ci-outline">Cancel</a>
+          <button type="submit" class="btn-ci btn-ci-primary">
+            <i class="bi bi-check-lg"></i> {% if event %}Save Changes{% else %}Create Event{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

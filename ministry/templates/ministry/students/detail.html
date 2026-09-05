@@ -1,0 +1,178 @@
+{% extends 'ministry/base.html' %}
+{% block title %}{{ student.full_name }}{% endblock %}
+{% block topbar_title %}Student Profile{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb-ci fade-up">
+  <a href="{% url 'student_list' %}">Students</a>
+  <span>/</span> {{ student.full_name }}
+</div>
+
+<div class="grid-2" style="margin-top:16px;align-items:start">
+  <!-- Profile Card -->
+  <div>
+    <div class="card-ci fade-up" style="margin-bottom:20px">
+      <div style="padding:28px;text-align:center;border-bottom:1px solid var(--border);
+                  background:linear-gradient(135deg, rgba({{ student.primary_category.color|default:'#888888'|slice:'1:' }},0.1) 0%, transparent 60%)">
+        <div class="student-avatar" style="width:80px;height:80px;font-size:28px;margin:0 auto 16px;
+          background:linear-gradient(135deg,{{ student.primary_category.color|default:'#555' }},#1a1a3a)">
+          {{ student.initials }}
+        </div>
+        <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white)">{{ student.full_name }}</div>
+        <div style="margin-top:8px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap">
+          {% for cat in student.categories.all %}
+          <span class="cat-chip cat-{{ cat.slug }}">
+            <i class="bi {{ cat.icon }}"></i> {{ cat.name }}
+          </span>
+          {% endfor %}
+        </div>
+        <div style="margin-top:10px">
+          {% if student.is_active %}
+          <span class="badge-ci badge-active"><i class="bi bi-circle-fill" style="font-size:7px"></i> Active Member</span>
+          {% else %}
+          <span class="badge-ci badge-inactive">Inactive</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-ci-body">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          {% if student.email %}
+          <div style="display:flex;gap:12px;align-items:center">
+            <div style="width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="bi bi-envelope-fill" style="color:var(--muted)"></i>
+            </div>
+            <div><div style="font-size:11px;color:var(--muted)">Email</div><div style="font-size:13.5px">{{ student.email }}</div></div>
+          </div>
+          {% endif %}
+          {% if student.phone %}
+          <div style="display:flex;gap:12px;align-items:center">
+            <div style="width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="bi bi-telephone-fill" style="color:var(--muted)"></i>
+            </div>
+            <div><div style="font-size:11px;color:var(--muted)">Phone</div><div style="font-size:13.5px">{{ student.phone }}</div></div>
+          </div>
+          {% endif %}
+          {% if student.university %}
+          <div style="display:flex;gap:12px;align-items:center">
+            <div style="width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="bi bi-building-fill" style="color:var(--muted)"></i>
+            </div>
+            <div><div style="font-size:11px;color:var(--muted)">University</div><div style="font-size:13.5px">{{ student.university }}</div></div>
+          </div>
+          {% endif %}
+          {% if student.course_of_study %}
+          <div style="display:flex;gap:12px;align-items:center">
+            <div style="width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="bi bi-book-fill" style="color:var(--muted)"></i>
+            </div>
+            <div><div style="font-size:11px;color:var(--muted)">Course</div><div style="font-size:13.5px">{{ student.course_of_study }}</div></div>
+          </div>
+          {% endif %}
+          <div style="display:flex;gap:12px;align-items:center">
+            <div style="width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="bi bi-mortarboard-fill" style="color:var(--muted)"></i>
+            </div>
+            <div><div style="font-size:11px;color:var(--muted)">Year of Study</div><div style="font-size:13.5px">{{ student.get_year_of_study_display }}</div></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div style="width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="bi bi-calendar-event-fill" style="color:var(--muted)"></i>
+            </div>
+            <div><div style="font-size:11px;color:var(--muted)">Date Joined</div><div style="font-size:13.5px">{{ student.date_joined|date:"d F Y" }}</div></div>
+          </div>
+          {% if student.notes %}
+          <div style="background:var(--card2);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--muted)">
+            {{ student.notes }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if is_admin %}
+    <!-- Actions -->
+    <div style="display:flex;gap:10px">
+      <a href="{% url 'student_edit' student.pk %}" class="btn-ci btn-ci-primary" style="flex:1;justify-content:center">
+        <i class="bi bi-pencil-fill"></i> Edit Student
+      </a>
+      <a href="{% url 'student_delete' student.pk %}" class="btn-ci btn-ci-danger" style="padding:9px 16px">
+        <i class="bi bi-trash-fill"></i>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Attendance & Stats -->
+  <div>
+    <!-- Stats Row -->
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="stat-tile fade-up" style="padding:18px">
+        <div class="tile-value" style="font-size:28px">{{ total_events }}</div>
+        <div class="tile-label">Total Events</div>
+      </div>
+      <div class="stat-tile fade-up fade-up-1" style="padding:18px">
+        <div class="tile-value" style="font-size:28px;color:var(--gold)">{{ student.attendance_rate }}%</div>
+        <div class="tile-label">Attendance Rate</div>
+        <div class="ci-progress" style="margin-top:10px">
+          <div class="ci-progress-bar" style="background:var(--gold);width:{{ student.attendance_rate }}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance History -->
+    <div class="card-ci fade-up">
+      <div class="card-ci-header">
+        <div class="card-ci-title"><i class="bi bi-check2-all" style="color:#2ecc71"></i> Attendance History</div>
+        <span style="font-size:12px;color:var(--muted)">{{ attended_events }}/{{ total_events }} attended</span>
+      </div>
+      <div style="overflow-x:auto;max-height:480px">
+        <table class="ci-table">
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Date</th>
+              <th>Attended</th>
+              <th>Participated</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for att in attendances %}
+            <tr>
+              <td>
+                <a href="{% url 'event_detail' att.event.pk %}" style="color:var(--text);font-size:13px">
+                  {{ att.event.title }}
+                </a>
+                <div style="font-size:10.5px;color:var(--muted)">{{ att.event.get_event_type_display }}</div>
+              </td>
+              <td style="font-size:12px;color:var(--muted)">{{ att.event.event_date|date:"d M Y" }}</td>
+              <td>
+                {% if att.attended %}
+                <span style="color:#2ecc71"><i class="bi bi-check-circle-fill"></i></span>
+                {% else %}
+                <span style="color:var(--dim)"><i class="bi bi-x-circle"></i></span>
+                {% endif %}
+              </td>
+              <td>
+                {% if att.participated %}
+                <span style="color:#5c85f5"><i class="bi bi-star-fill" style="font-size:12px"></i> Yes</span>
+                {% else %}
+                <span style="color:var(--dim)">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">No attendance records yet</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

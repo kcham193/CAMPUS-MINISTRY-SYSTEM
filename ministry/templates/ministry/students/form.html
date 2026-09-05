@@ -1,0 +1,108 @@
+{% extends 'ministry/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block topbar_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb-ci fade-up">
+  <a href="{% url 'student_list' %}">Students</a>
+  {% if student %}<span>/</span><a href="{% url 'student_detail' student.pk %}">{{ student.full_name }}</a>{% endif %}
+  <span>/</span> {{ title }}
+</div>
+
+<div style="max-width:780px;margin:20px auto">
+  <div class="card-ci fade-up">
+    <div class="card-ci-header">
+      <div class="card-ci-title">
+        <i class="bi bi-person-fill" style="color:var(--gold)"></i> {{ title }}
+      </div>
+    </div>
+    <div class="card-ci-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="grid-2" style="gap:18px;margin-bottom:18px">
+          <div>
+            <label>First Name *</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}<div style="color:#e74c3c;font-size:11px;margin-top:4px">{{ form.first_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div>
+            <label>Last Name *</label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}<div style="color:#e74c3c;font-size:11px;margin-top:4px">{{ form.last_name.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="grid-2" style="gap:18px;margin-bottom:18px">
+          <div>
+            <label>Email Address *</label>
+            {{ form.email }}
+            {% if form.email.errors %}<div style="color:#e74c3c;font-size:11px;margin-top:4px">{{ form.email.errors.0 }}</div>{% endif %}
+          </div>
+          <div>
+            <label>Phone Number</label>
+            {{ form.phone }}
+          </div>
+        </div>
+
+        <div style="margin-bottom:18px">
+          <label>University / College</label>
+          {{ form.university }}
+        </div>
+
+        <div style="margin-bottom:18px">
+          <label>Ministry Categories <span style="color:var(--muted);font-weight:400">(select up to 2)</span></label>
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:12px 18px">
+            {{ form.categories }}
+          </div>
+          {% if form.categories.errors %}<div style="color:#e74c3c;font-size:11px;margin-top:4px">{{ form.categories.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="grid-2" style="gap:18px;margin-bottom:18px">
+          <div>
+            <label>Year of Study</label>
+            {{ form.year_of_study }}
+          </div>
+          <div>
+            <label>Course of Study</label>
+            {{ form.course_of_study }}
+          </div>
+        </div>
+
+        <div class="grid-2" style="gap:18px;margin-bottom:18px">
+          <div>
+            <label>Date Joined Ministry</label>
+            {{ form.date_joined }}
+          </div>
+          <div>
+            <label>Profile Photo <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+            {{ form.photo }}
+          </div>
+        </div>
+
+        <div style="margin-bottom:18px">
+          <label>Notes / Observations</label>
+          {{ form.notes }}
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;
+                    background:var(--card2);border-radius:10px;padding:12px 16px;border:1px solid var(--border)">
+          {{ form.is_active }}
+          <label style="margin:0;font-size:13.5px;color:var(--text);cursor:pointer">
+            Student is currently active in the ministry
+          </label>
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:flex-end">
+          <a href="{% if student %}{% url 'student_detail' student.pk %}{% else %}{% url 'student_list' %}{% endif %}"
+             class="btn-ci btn-ci-outline">Cancel</a>
+          <button type="submit" class="btn-ci btn-ci-primary">
+            <i class="bi bi-check-lg"></i>
+            {% if student %}Save Changes{% else %}Add Student{% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

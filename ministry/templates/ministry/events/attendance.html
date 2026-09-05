@@ -1,0 +1,190 @@
+{% extends 'ministry/base.html' %}
+{% block title %}Attendance — {{ event.title }}{% endblock %}
+{% block topbar_title %}Mark Attendance{% endblock %}
+
+{% load ministrytags %}
+
+{% block extra_head %}
+<style>
+  .att-row {
+    display:grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 2fr;
+    align-items:center;
+    padding:11px 16px;
+    border-bottom:1px solid var(--border);
+    gap:12px;
+    transition:background .15s;
+  }
+  .att-row:hover { background:rgba(255,255,255,0.02); }
+  .att-row:last-child { border-bottom:none; }
+  .att-row.attended-yes { background:rgba(39,174,96,0.04); }
+  .att-check-label {
+    display:flex;align-items:center;justify-content:center;
+    width:28px;height:28px;border-radius:8px;
+    border:1.5px solid var(--border);
+    cursor:pointer;transition:all .15s;
+    font-size:14px;color:var(--dim);
+  }
+  .attended-check:checked + .att-check-label {
+    border-color:#2ecc71;background:rgba(39,174,96,.15);color:#2ecc71;
+  }
+  .participated-check:checked + .att-check-label {
+    border-color:#5c85f5;background:rgba(92,133,245,.15);color:#5c85f5;
+  }
+  .attended-check, .participated-check { display:none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb-ci fade-up">
+  <a href="{% url 'event_list' %}">Events</a>
+  <span>/</span> <a href="{% url 'event_detail' event.pk %}">{{ event.title }}</a>
+  <span>/</span> Attendance
+</div>
+
+<div class="page-header fade-up" style="margin-top:16px">
+  <div class="page-header-left">
+    <h1>Mark Attendance</h1>
+    <p>{{ event.title }} &nbsp;·&nbsp; {{ event.event_date|date:"d F Y" }} &nbsp;·&nbsp; {{ students|length }} students</p>
+  </div>
+</div>
+
+<!-- Quick stats bar -->
+<div class="grid-4" style="margin-bottom:20px">
+  <div class="stat-tile fade-up" style="padding:16px">
+    <div class="tile-value" style="font-size:24px" id="attendedCount">0</div>
+    <div class="tile-label">Attended</div>
+  </div>
+  <div class="stat-tile fade-up fade-up-1" style="padding:16px">
+    <div class="tile-value" style="font-size:24px;color:#5c85f5" id="participatedCount">0</div>
+    <div class="tile-label">Participated</div>
+  </div>
+  <div class="stat-tile fade-up fade-up-2" style="padding:16px">
+    <div class="tile-value" style="font-size:24px;color:var(--gold)" id="rateDisplay">0%</div>
+    <div class="tile-label">Attendance Rate</div>
+  </div>
+  <div class="stat-tile fade-up fade-up-3" style="padding:16px">
+    <div class="tile-value" style="font-size:24px;color:var(--muted)">{{ students|length }}</div>
+    <div class="tile-label">Total Students</div>
+  </div>
+</div>
+
+<div class="card-ci fade-up fade-up-2">
+  <div class="card-ci-header">
+    <div class="card-ci-title"><i class="bi bi-check2-all" style="color:#2ecc71"></i> Attendance Register</div>
+    <div style="display:flex;gap:10px">
+      <button type="button" class="btn-ci btn-ci-success" style="padding:6px 14px;font-size:12px" onclick="markAll(true)">
+        <i class="bi bi-check-all"></i> Mark All
+      </button>
+      <button type="button" class="btn-ci btn-ci-outline" style="padding:6px 14px;font-size:12px" onclick="markAll(false)">
+        <i class="bi bi-x-lg"></i> Clear All
+      </button>
+    </div>
+  </div>
+
+  <!-- Header row -->
+  <div class="att-row" style="background:var(--card2);font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:600">
+    <div>Student</div>
+    <div style="text-align:center">Attended</div>
+    <div style="text-align:center">Participated</div>
+    <div>University</div>
+    <div>Notes</div>
+  </div>
+
+  <form method="post" id="attendanceForm">
+    {% csrf_token %}
+    {% for student in students %}
+    {% with att=existing|default_if_none:None %}
+    <div class="att-row" id="row-{{ student.id }}">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="student-avatar" style="width:34px;height:34px;font-size:13px;
+          background:linear-gradient(135deg,{{ student.primary_category.color|default:'#555' }},#1a1a3a)">
+          {{ student.initials }}
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">{{ student.full_name }}</div>
+          {% with cats=student.categories.all %}
+            {% if cats %}<div style="font-size:10.5px;color:var(--muted)">{% for c in cats %}{{ c.slug|capfirst }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>{% endif %}
+          {% endwith %}
+        </div>
+      </div>
+      <div style="text-align:center">
+        <input type="checkbox" class="attended-check" name="attended_{{ student.id }}" id="att_{{ student.id }}"
+          {% if student.id in existing and existing|get_item:student.id %}{% with a=existing|get_item:student.id %}{% if a.attended %}checked{% endif %}{% endwith %}{% endif %}
+          onchange="updateRow({{ student.id }});updateCounts()">
+        <label for="att_{{ student.id }}" class="att-check-label"><i class="bi bi-check-lg"></i></label>
+      </div>
+      <div style="text-align:center">
+        <input type="checkbox" class="participated-check" name="participated_{{ student.id }}" id="part_{{ student.id }}"
+          {% if student.id in existing and existing|get_item:student.id %}{% with a=existing|get_item:student.id %}{% if a.participated %}checked{% endif %}{% endwith %}{% endif %}
+          onchange="updateCounts()">
+        <label for="part_{{ student.id }}" class="att-check-label"><i class="bi bi-star-fill" style="font-size:12px"></i></label>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted)">{{ student.university|default:"—" }}</div>
+      <div>
+        <input type="text" name="notes_{{ student.id }}" placeholder="Optional notes…"
+               class="ci-input" style="padding:6px 10px !important;font-size:12px !important"
+               value="{% if student.id in existing and existing|get_item:student.id %}{% with a=existing|get_item:student.id %}{{ a.notes }}{% endwith %}{% endif %}">
+      </div>
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div style="text-align:center;padding:50px;color:var(--muted)">
+      <i class="bi bi-person-x" style="font-size:30px;display:block;margin-bottom:8px"></i>
+      No active students to mark attendance for.
+    </div>
+    {% endfor %}
+
+    {% if students %}
+    <div style="padding:18px;display:flex;justify-content:flex-end;gap:12px;border-top:1px solid var(--border)">
+      <a href="{% url 'event_detail' event.pk %}" class="btn-ci btn-ci-outline">Cancel</a>
+      <button type="submit" class="btn-ci btn-ci-primary">
+        <i class="bi bi-save-fill"></i> Save Attendance
+      </button>
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const totalStudents = {{ students|length }};
+
+function updateRow(studentId) {
+  const checked = document.getElementById('att_' + studentId).checked;
+  const row = document.getElementById('row-' + studentId);
+  if (checked) row.classList.add('attended-yes');
+  else row.classList.remove('attended-yes');
+}
+
+function updateCounts() {
+  const attChecks = document.querySelectorAll('.attended-check:checked');
+  const partChecks = document.querySelectorAll('.participated-check:checked');
+  document.getElementById('attendedCount').textContent = attChecks.length;
+  document.getElementById('participatedCount').textContent = partChecks.length;
+  const rate = totalStudents > 0 ? Math.round(attChecks.length / totalStudents * 100) : 0;
+  document.getElementById('rateDisplay').textContent = rate + '%';
+}
+
+function markAll(checked) {
+  document.querySelectorAll('.attended-check').forEach(cb => {
+    cb.checked = checked;
+    const id = cb.name.replace('attended_', '');
+    const row = document.getElementById('row-' + id);
+    if (checked) row.classList.add('attended-yes');
+    else row.classList.remove('attended-yes');
+  });
+  updateCounts();
+}
+
+// Init row highlights and counts
+document.querySelectorAll('.attended-check').forEach(cb => {
+  if (cb.checked) {
+    const id = cb.name.replace('attended_', '');
+    document.getElementById('row-' + id)?.classList.add('attended-yes');
+  }
+});
+updateCounts();
+</script>
+{% endblock %}

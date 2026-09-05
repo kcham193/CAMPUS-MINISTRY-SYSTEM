@@ -1,0 +1,372 @@
+{% extends 'ministry/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  .goal-ring-wrap {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .goal-ring-center {
+    position: absolute;
+    text-align: center;
+  }
+  .goal-ring-center .big-num {
+    font-family:inherit; font-size:32px; font-weight:800; color:var(--white); line-height:1;
+  }
+  .goal-ring-center .big-label { font-size:11px; color:var(--muted); margin-top:4px; }
+  .timeline-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .event-row {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 11px 0; border-bottom: 1px solid var(--border);
+  }
+  .event-row:last-child { border-bottom: none; }
+  .event-icon {
+    width: 36px; height: 36px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .cat-row { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .cat-row:last-child { border-bottom: none; }
+  .student-card {
+    background: var(--card2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px;
+    display: flex; align-items: center; gap: 12px;
+    transition: border-color .2s;
+  }
+  .student-card:hover { border-color: var(--gold); }
+  .top-student-rank {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--card); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    flex-shrink: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header fade-up">
+  <div class="page-header-left">
+    <h1>Ministry Dashboard</h1>
+    <p>Tracking progress toward 3,000 university students — Career · Faith · Teaching · Purpose</p>
+  </div>
+  <div style="display:flex;gap:10px">
+    <a href="{% url 'reports_index' %}" class="btn-ci btn-ci-outline"><i class="bi bi-bar-chart-fill"></i> Reports</a>
+    <a href="{% url 'report_pdf' %}" class="btn-ci btn-ci-primary"><i class="bi bi-download"></i> Download PDF</a>
+  </div>
+</div>
+
+<!-- ── STAT TILES ─────────────────────────────────────────────────── -->
+<div class="grid-4" style="margin-bottom:24px">
+  <div class="stat-tile fade-up fade-up-1">
+    <div class="tile-icon" style="background:rgba(200,146,26,.15)"><i class="bi bi-people-fill" style="color:var(--gold)"></i></div>
+    <div class="tile-value" data-counter data-target="{{ total_students }}">0</div>
+    <div class="tile-label">Students Reached</div>
+    <div class="tile-sub" style="color:var(--muted)">Goal: {{ total_goal|floatformat:"0" }} total</div>
+    <div style="margin-top:12px">
+      <div class="ci-progress"><div class="ci-progress-bar" style="background:var(--gold);width:0" data-width="{{ overall_progress }}%"></div></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">{{ overall_progress }}% achieved</div>
+    </div>
+  </div>
+
+  <div class="stat-tile fade-up fade-up-2">
+    <div class="tile-icon" style="background:rgba(39,174,96,.15)"><i class="bi bi-calendar-check-fill" style="color:#2ecc71"></i></div>
+    <div class="tile-value" data-counter data-target="{{ total_events }}">0</div>
+    <div class="tile-label">Events Held</div>
+    <div class="tile-sub">{{ recent_events|length }} in recent period</div>
+  </div>
+
+  <div class="stat-tile fade-up fade-up-3">
+    <div class="tile-icon" style="background:rgba(92,133,245,.15)"><i class="bi bi-building-fill" style="color:#5c85f5"></i></div>
+    <div class="tile-value" data-counter data-target="{{ universities_reached }}">0</div>
+    <div class="tile-label">Universities Reached</div>
+    <div class="tile-sub">of {{ total_universities }} in Dar es Salaam</div>
+    <div style="margin-top:12px">
+      <div class="ci-progress">
+        <div class="ci-progress-bar" style="background:#5c85f5;width:0"
+          data-width="{% if total_universities %}{% widthratio universities_reached total_universities 100 %}%{% else %}0%{% endif %}"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-tile fade-up fade-up-4">
+    <div class="tile-icon" style="background:rgba(171,124,245,.15)"><i class="bi bi-graph-up-arrow" style="color:#ab7cf5"></i></div>
+    <div class="tile-value" data-counter data-target="{{ students_remaining }}">0</div>
+    <div class="tile-label">Students Remaining</div>
+    <div class="tile-sub">to reach 3,000 goal</div>
+  </div>
+</div>
+
+<!-- ── MAIN CHARTS ROW ────────────────────────────────────────────── -->
+<div class="grid-2" style="margin-bottom:24px">
+
+  <!-- Goal Progress Ring + Category List -->
+  <div class="card-ci fade-up fade-up-2">
+    <div class="card-ci-header">
+      <div class="card-ci-title"><i class="bi bi-bullseye" style="color:var(--gold)"></i> Vivid Outcomes — Category Progress</div>
+    </div>
+    <div class="card-ci-body">
+      <div style="display:flex;gap:24px;align-items:center;margin-bottom:18px">
+        <div class="goal-ring-wrap" style="flex-shrink:0">
+          <canvas id="goalRingChart" width="140" height="140"></canvas>
+          <div class="goal-ring-center">
+            <div class="big-num">{{ overall_progress }}%</div>
+            <div class="big-label">Overall</div>
+          </div>
+        </div>
+        <div style="flex:1">
+          {% for cat in categories %}
+          <div class="cat-row">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="width:10px;height:10px;border-radius:50%;background:{{ cat.color }};display:inline-block"></span>
+                <span style="font-size:12.5px;font-weight:500">{{ cat.name }}</span>
+              </div>
+              <span style="font-size:12px;color:var(--muted)">{{ cat.current_count }}/{{ cat.target_count }}</span>
+            </div>
+            <div class="ci-progress">
+              <div class="ci-progress-bar" style="background:{{ cat.color }};width:0" data-width="{{ cat.progress_percent }}%"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Growth Trend Chart -->
+  <div class="card-ci fade-up fade-up-3">
+    <div class="card-ci-header">
+      <div class="card-ci-title"><i class="bi bi-graph-up" style="color:#5c85f5"></i> Student Growth Trend</div>
+    </div>
+    <div class="card-ci-body">
+      <canvas id="growthChart" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ── BOTTOM ROW ─────────────────────────────────────────────────── -->
+<div class="grid-3" style="margin-bottom:24px">
+
+  <!-- Category Bar Chart -->
+  <div class="card-ci fade-up fade-up-1">
+    <div class="card-ci-header">
+      <div class="card-ci-title"><i class="bi bi-bar-chart-fill" style="color:var(--gold)"></i> Category vs Target</div>
+    </div>
+    <div class="card-ci-body">
+      <canvas id="categoryBarChart" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- Recent Events -->
+  <div class="card-ci fade-up fade-up-2">
+    <div class="card-ci-header">
+      <div class="card-ci-title"><i class="bi bi-calendar3" style="color:#2ecc71"></i> Recent Events</div>
+      <a href="{% url 'event_list' %}" class="btn-ci btn-ci-outline" style="padding:5px 12px;font-size:11.5px">View All</a>
+    </div>
+    <div class="card-ci-body" style="padding-top:10px">
+      {% for event in recent_events %}
+      <div class="event-row">
+        <div class="event-icon" style="background:rgba(39,174,96,.12)">
+          {% if event.event_type == 'fellowship' %}<i class="bi bi-people-fill" style="color:#2ecc71"></i>
+          {% elif event.event_type == 'worship' %}<i class="bi bi-music-note-beamed" style="color:#ab7cf5"></i>
+          {% elif event.event_type == 'seminar' %}<i class="bi bi-journal-text" style="color:#5c85f5"></i>
+          {% elif event.event_type == 'outreach' %}<i class="bi bi-megaphone-fill" style="color:var(--gold)"></i>
+          {% else %}<i class="bi bi-star-fill" style="color:var(--gold)"></i>{% endif %}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            <a href="{% url 'event_detail' event.pk %}" style="color:var(--text)">{{ event.title }}</a>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">
+            {{ event.event_date|date:"d M Y" }} &nbsp;·&nbsp;
+            {{ event.actual_attendance }} attended
+            {% if event.is_completed %}<span class="badge-ci badge-active" style="padding:1px 7px;font-size:9.5px">Done</span>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div style="text-align:center;padding:30px 0;color:var(--muted)">
+        <i class="bi bi-calendar-x" style="font-size:28px;display:block;margin-bottom:8px"></i>
+        No events yet
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Latest Students -->
+  <div class="card-ci fade-up fade-up-3">
+    <div class="card-ci-header">
+      <div class="card-ci-title"><i class="bi bi-person-plus-fill" style="color:var(--gold)"></i> Latest Students</div>
+      <a href="{% url 'student_list' %}" class="btn-ci btn-ci-outline" style="padding:5px 12px;font-size:11.5px">View All</a>
+    </div>
+    <div class="card-ci-body" style="padding:12px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        {% for student in latest_students %}
+        <div class="student-card">
+          <div class="student-avatar"
+            style="background:linear-gradient(135deg,{{ student.primary_category.color|default:'#888' }},#333)">
+            {{ student.initials }}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">
+              <a href="{% url 'student_detail' student.pk %}" style="color:var(--text)">{{ student.full_name }}</a>
+            </div>
+            <div style="font-size:11px;color:var(--muted)">
+              {{ student.university|default:"—" }} · {{ student.date_joined|date:"d M Y" }}
+            </div>
+          </div>
+          <div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end">
+            {% for cat in student.categories.all %}
+            <span class="cat-chip cat-{{ cat.slug }}">{{ cat.slug }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% empty %}
+        <div style="text-align:center;padding:24px 0;color:var(--muted)">
+          <i class="bi bi-person-x" style="font-size:28px;display:block;margin-bottom:8px"></i>
+          {% if is_admin %}No students yet. <a href="{% url 'student_create' %}">Add first student</a>{% else %}No students yet.{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOP ACTIVE STUDENTS ─────────────────────────────────────────── -->
+{% if top_students %}
+<div class="card-ci fade-up">
+  <div class="card-ci-header">
+    <div class="card-ci-title"><i class="bi bi-trophy-fill" style="color:var(--gold)"></i> Most Active Students</div>
+    <span style="font-size:12px;color:var(--muted)">By event attendance</span>
+  </div>
+  <div class="card-ci-body" style="padding:12px 18px">
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      {% for student in top_students %}
+      <a href="{% url 'student_detail' student.pk %}" style="text-decoration:none;flex:1;min-width:160px">
+        <div class="student-card" style="flex-direction:column;align-items:flex-start;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px;width:100%">
+            <div class="top-student-rank">{{ forloop.counter }}</div>
+            <div class="student-avatar" style="width:32px;height:32px;font-size:12px;background:linear-gradient(135deg,{{ student.primary_category.color|default:'#888' }},#333)">{{ student.initials }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ student.full_name }}</div>
+              <div style="font-size:10.5px;color:var(--muted)">{{ student.att_count }} events</div>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const catData = {{ category_data_json|safe }};
+const monthLabels = {{ monthly_labels|safe }};
+const monthData = {{ monthly_data|safe }};
+
+Chart.defaults.color = '#6b7494';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+
+// ── Goal Ring Chart ─────────────────────────────────────────────────
+const ringCtx = document.getElementById('goalRingChart').getContext('2d');
+const ringValues = catData.map(c => c.current);
+const ringColors = catData.map(c => c.color);
+new Chart(ringCtx, {
+  type: 'doughnut',
+  data: {
+    labels: catData.map(c => c.name),
+    datasets: [{
+      data: ringValues,
+      backgroundColor: ringColors,
+      borderWidth: 2,
+      borderColor: '#111830',
+      hoverOffset: 6,
+    }]
+  },
+  options: {
+    cutout: '68%',
+    plugins: { legend: { display: false }, tooltip: { callbacks: {
+      label: ctx => ` ${ctx.label}: ${ctx.raw} students`
+    }}},
+    animation: { animateRotate: true, duration: 1200 }
+  }
+});
+
+// ── Growth Trend ────────────────────────────────────────────────────
+const growCtx = document.getElementById('growthChart').getContext('2d');
+const grad = growCtx.createLinearGradient(0, 0, 0, 200);
+grad.addColorStop(0, 'rgba(200,146,26,0.3)');
+grad.addColorStop(1, 'rgba(200,146,26,0.0)');
+new Chart(growCtx, {
+  type: 'line',
+  data: {
+    labels: monthLabels,
+    datasets: [{
+      label: 'Students',
+      data: monthData,
+      borderColor: '#c8921a',
+      backgroundColor: grad,
+      borderWidth: 2.5,
+      tension: 0.4,
+      fill: true,
+      pointBackgroundColor: '#c8921a',
+      pointBorderColor: '#111830',
+      pointBorderWidth: 2,
+      pointRadius: 5,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }
+    },
+    animation: { duration: 1400 }
+  }
+});
+
+// ── Category Bar Chart ──────────────────────────────────────────────
+const barCtx = document.getElementById('categoryBarChart').getContext('2d');
+new Chart(barCtx, {
+  type: 'bar',
+  data: {
+    labels: catData.map(c => c.name.split(' ').slice(0,2).join('\n')),
+    datasets: [
+      {
+        label: 'Reached',
+        data: catData.map(c => c.current),
+        backgroundColor: catData.map(c => c.color + 'dd'),
+        borderRadius: 6,
+        borderSkipped: false,
+      },
+      {
+        label: 'Target',
+        data: catData.map(c => c.target),
+        backgroundColor: catData.map(c => c.color + '33'),
+        borderRadius: 6,
+        borderSkipped: false,
+      }
+    ]
+  },
+  options: {
+    plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true }
+    },
+    animation: { duration: 1200 }
+  }
+});
+</script>
+{% endblock %}

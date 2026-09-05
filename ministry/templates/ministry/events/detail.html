@@ -1,0 +1,138 @@
+{% extends 'ministry/base.html' %}
+{% block title %}{{ event.title }}{% endblock %}
+{% block topbar_title %}Event Detail{% endblock %}
+
+{% block content %}
+<div class="breadcrumb-ci fade-up">
+  <a href="{% url 'event_list' %}">Events</a>
+  <span>/</span> {{ event.title }}
+</div>
+
+<div class="grid-2" style="margin-top:16px;align-items:start">
+  <!-- Event Info -->
+  <div>
+    <div class="card-ci fade-up" style="margin-bottom:20px">
+      <div class="card-ci-header">
+        <div class="card-ci-title"><i class="bi bi-calendar-event-fill" style="color:var(--gold)"></i> Event Details</div>
+        {% if event.is_completed %}
+        <span class="badge-ci badge-active"><i class="bi bi-check-circle-fill" style="font-size:9px"></i> Completed</span>
+        {% else %}
+        <span class="badge-ci" style="background:rgba(200,146,26,.1);color:var(--gold);border:1px solid rgba(200,146,26,.2)">Upcoming</span>
+        {% endif %}
+      </div>
+      <div class="card-ci-body">
+        <h2 style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);margin-bottom:14px">
+          {{ event.title }}
+        </h2>
+        {% if event.description %}
+        <p style="color:var(--muted);font-size:13.5px;line-height:1.6;margin-bottom:18px;
+                  background:var(--card2);border-radius:10px;padding:14px">{{ event.description }}</p>
+        {% endif %}
+        <div style="display:flex;flex-direction:column;gap:13px">
+          <div style="display:flex;gap:11px;align-items:center">
+            <div style="width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="bi bi-calendar3" style="color:var(--muted)"></i>
+            </div>
+            <div><div style="font-size:11px;color:var(--muted)">Date</div>
+            <div style="font-size:13.5px">{{ event.event_date|date:"l, d F Y" }}{% if event.event_time %} at {{ event.event_time|time:"H:i" }}{% endif %}</div></div>
+          </div>
+          <div style="display:flex;gap:11px;align-items:center">
+            <div style="width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="bi bi-pin-map-fill" style="color:var(--muted)"></i>
+            </div>
+            <div><div style="font-size:11px;color:var(--muted)">Location</div><div style="font-size:13.5px">{{ event.location }}</div></div>
+          </div>
+          <div style="display:flex;gap:11px;align-items:center">
+            <div style="width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="bi bi-tag-fill" style="color:var(--muted)"></i>
+            </div>
+            <div><div style="font-size:11px;color:var(--muted)">Type</div>
+            <span class="badge-ci badge-type" style="margin-top:3px">{{ event.get_event_type_display }}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid-2" style="gap:14px;margin-bottom:20px">
+      <div class="stat-tile" style="padding:18px">
+        <div class="tile-value" style="font-size:28px;color:var(--gold)">{{ event.actual_attendance }}</div>
+        <div class="tile-label">Attended</div>
+        <div class="tile-sub">Expected: {{ event.expected_attendance }}</div>
+      </div>
+      <div class="stat-tile" style="padding:18px">
+        <div class="tile-value" style="font-size:28px;color:#2ecc71">{{ event.attendance_rate }}%</div>
+        <div class="tile-label">Attendance Rate</div>
+        <div class="ci-progress" style="margin-top:10px">
+          <div class="ci-progress-bar" style="background:#2ecc71;width:{{ event.attendance_rate }}%"></div>
+        </div>
+      </div>
+    </div>
+
+    {% if is_admin %}
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="{% url 'event_attendance' event.pk %}" class="btn-ci btn-ci-success">
+        <i class="bi bi-check2-all"></i> Mark Attendance
+      </a>
+      <a href="{% url 'event_edit' event.pk %}" class="btn-ci btn-ci-outline">
+        <i class="bi bi-pencil"></i> Edit
+      </a>
+      <a href="{% url 'event_delete' event.pk %}" class="btn-ci btn-ci-danger">
+        <i class="bi bi-trash"></i>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Attendance List -->
+  <div class="card-ci fade-up fade-up-2">
+    <div class="card-ci-header">
+      <div class="card-ci-title"><i class="bi bi-people-fill" style="color:#5c85f5"></i> Attendance Register</div>
+      <span style="font-size:12px;color:var(--muted)">{{ event.participants_count }} participated</span>
+    </div>
+    <div style="overflow-x:auto;max-height:560px">
+      <table class="ci-table">
+        <thead>
+          <tr><th>Student</th><th>University</th><th>Attended</th><th>Participated</th></tr>
+        </thead>
+        <tbody>
+          {% for att in attendances %}
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:10px">
+                <div class="student-avatar" style="width:32px;height:32px;font-size:12px;
+                  background:linear-gradient(135deg,{{ att.student.primary_category.color|default:'#555' }},#222)">
+                  {{ att.student.initials }}
+                </div>
+                <a href="{% url 'student_detail' att.student.pk %}" style="color:var(--text);font-size:13px">
+                  {{ att.student.full_name }}
+                </a>
+              </div>
+            </td>
+            <td style="font-size:11.5px;color:var(--muted)">{{ att.student.university|default:"—" }}</td>
+            <td>
+              {% if att.attended %}
+              <i class="bi bi-check-circle-fill" style="color:#2ecc71"></i>
+              {% else %}
+              <i class="bi bi-x-circle" style="color:var(--dim)"></i>
+              {% endif %}
+            </td>
+            <td>
+              {% if att.participated %}
+              <i class="bi bi-star-fill" style="color:#5c85f5;font-size:13px"></i>
+              {% else %}<span style="color:var(--dim)">—</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">
+              {% if is_admin %}No attendance recorded. <a href="{% url 'event_attendance' event.pk %}">Mark attendance →</a>{% else %}No attendance recorded.{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

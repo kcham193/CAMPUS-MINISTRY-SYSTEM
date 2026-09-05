@@ -1,0 +1,17 @@
+Django>=4.2,<5.0
+Pillow>=10.0
+reportlab>=4.0
+django-crispy-forms>=2.0
+crispy-bootstrap5>=0.7
+
+# Production server & deployment
+gunicorn>=21.2
+whitenoise>=6.6
+
+# Postgres on Render
+psycopg2-binary>=2.9
+dj-database-url>=2.1
+
+# Cloudinary for media (student photos)
+cloudinary>=1.40
+django-cloudinary-storage>=0.3

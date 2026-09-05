@@ -1,0 +1,26 @@
+{% extends 'ministry/base.html' %}
+{% block title %}Delete Event{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:60px auto;text-align:center">
+  <div class="card-ci fade-up">
+    <div class="card-ci-body" style="padding:40px">
+      <div style="width:64px;height:64px;border-radius:50%;background:rgba(192,57,43,.12);
+                  border:1px solid rgba(192,57,43,.3);display:flex;align-items:center;
+                  justify-content:center;margin:0 auto 20px;font-size:26px;color:#e74c3c">
+        <i class="bi bi-trash-fill"></i>
+      </div>
+      <h2 style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--white);margin-bottom:10px">Delete Event?</h2>
+      <p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:24px">
+        Delete <strong style="color:var(--text)">{{ event.title }}</strong> and all its attendance records?
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        <div style="display:flex;gap:12px;justify-content:center">
+          <a href="{% url 'event_detail' event.pk %}" class="btn-ci btn-ci-outline"><i class="bi bi-arrow-left"></i> Cancel</a>
+          <button type="submit" class="btn-ci btn-ci-danger"><i class="bi bi-trash-fill"></i> Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

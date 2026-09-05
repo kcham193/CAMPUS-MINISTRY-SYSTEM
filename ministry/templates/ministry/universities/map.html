@@ -1,0 +1,161 @@
+{% extends 'ministry/base.html' %}
+{% block title %}University Coverage Map{% endblock %}
+{% block topbar_title %}University Map{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  #map { height: 520px; border-radius: 14px; }
+  .leaflet-container { background: #f2f4fa; }
+  .uni-popup .uni-name { font-family:'Syne',sans-serif; font-size:14px; font-weight:700; color:#0a0e1a; }
+  .uni-popup .uni-type { font-size:11px; color:#555; margin-bottom:6px; }
+  .uni-popup .uni-stat { font-size:12px; color:#0a0e1a; }
+  .uni-list-item {
+    display:flex;align-items:center;gap:10px;
+    padding:10px 0;border-bottom:1px solid var(--border);
+    cursor:pointer;transition:background .15s;
+  }
+  .uni-list-item:last-child { border-bottom:none; }
+  .uni-list-item:hover { padding-left:6px; }
+  .uni-dot { width:10px;height:10px;border-radius:50%;flex-shrink:0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header fade-up">
+  <div class="page-header-left">
+    <h1>University Coverage Map</h1>
+    <p>Dar es Salaam Region — tracking campus ministry reach across institutions</p>
+  </div>
+  {% if is_admin %}
+  <a href="{% url 'university_create' %}" class="btn-ci btn-ci-primary"><i class="bi bi-plus-lg"></i> Add University</a>
+  {% endif %}
+</div>
+
+<!-- Stats row -->
+<div class="grid-4" style="margin-bottom:20px">
+  <div class="stat-tile fade-up" style="padding:18px">
+    <div class="tile-value" style="font-size:26px;color:var(--gold)">{{ reached_count }}</div>
+    <div class="tile-label">Institutions Reached</div>
+  </div>
+  <div class="stat-tile fade-up fade-up-1" style="padding:18px">
+    <div class="tile-value" style="font-size:26px">{{ total_count }}</div>
+    <div class="tile-label">Total Mapped</div>
+  </div>
+  <div class="stat-tile fade-up fade-up-2" style="padding:18px">
+    <div class="tile-value" style="font-size:26px;color:var(--muted)">{{ not_reached_count }}</div>
+    <div class="tile-label">Still to Reach</div>
+  </div>
+  <div class="stat-tile fade-up fade-up-3" style="padding:18px">
+    <div class="tile-value" style="font-size:26px;color:#2ecc71">
+      {% if total_count %}{% widthratio reached_count total_count 100 %}{% else %}0{% endif %}%
+    </div>
+    <div class="tile-label">Coverage</div>
+    <div class="ci-progress" style="margin-top:10px">
+      <div class="ci-progress-bar" style="background:#2ecc71;width:{% if total_count %}{% widthratio reached_count total_count 100 %}{% else %}0{% endif %}%"></div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2" style="align-items:start">
+  <!-- Map -->
+  <div class="card-ci fade-up fade-up-2">
+    <div class="card-ci-header">
+      <div class="card-ci-title"><i class="bi bi-map-fill" style="color:var(--gold)"></i> Interactive Map</div>
+      <div style="display:flex;gap:14px;font-size:11px">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2ecc71;margin-right:5px"></span>Reached</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e74c3c;margin-right:5px"></span>Not Reached</span>
+      </div>
+    </div>
+    <div style="padding:14px">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <!-- University List -->
+  <div class="card-ci fade-up fade-up-3">
+    <div class="card-ci-header">
+      <div class="card-ci-title"><i class="bi bi-list-ul" style="color:#5c85f5"></i> Institutions</div>
+    </div>
+    <div class="card-ci-body" style="padding:0 18px;max-height:560px;overflow-y:auto">
+      {% for uni in universities %}
+      <div class="uni-list-item" onclick="focusUni({{ uni.latitude }}, {{ uni.longitude }}, '{{ uni.name|escapejs }}')">
+        <div class="uni-dot" style="background:{% if uni.is_reached %}#2ecc71{% else %}#e74c3c{% endif %}"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            {{ uni.abbreviation|default:uni.name }}
+          </div>
+          <div style="font-size:10.5px;color:var(--muted)">{{ uni.get_type_display }} · {{ uni.student_count }} student{{ uni.student_count|pluralize }}</div>
+        </div>
+        {% if is_admin %}
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <a href="{% url 'university_edit' uni.pk %}" class="btn-ci btn-ci-outline" style="padding:4px 8px;font-size:11px"><i class="bi bi-pencil"></i></a>
+          <a href="{% url 'university_delete' uni.pk %}" class="btn-ci btn-ci-danger" style="padding:4px 8px;font-size:11px"><i class="bi bi-trash"></i></a>
+        </div>
+        {% endif %}
+      </div>
+      {% empty %}
+      <div style="text-align:center;padding:40px;color:var(--muted)">
+        <i class="bi bi-building" style="font-size:30px;display:block;margin-bottom:8px"></i>
+        No universities mapped yet
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const universities = {{ uni_data_json|safe }};
+
+// Dark tile layer
+const map = L.map('map', { zoomControl: true }).setView([-6.8, 39.26], 13);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap, © CARTO',
+  subdomains: 'abcd', maxZoom: 19
+}).addTo(map);
+
+const markers = {};
+
+function makeIcon(reached) {
+  return L.divIcon({
+    html: `<div style="
+      width:18px;height:18px;border-radius:50%;
+      background:${reached ? '#2ecc71' : '#e74c3c'};
+      border:2.5px solid ${reached ? '#27ae60' : '#c0392b'};
+      box-shadow:0 0 ${reached ? '10px rgba(39,174,96,0.6)' : '10px rgba(231,76,60,0.4)'};
+    "></div>`,
+    className:'',
+    iconSize:[18,18],
+    iconAnchor:[9,9],
+  });
+}
+
+universities.forEach(uni => {
+  const marker = L.marker([uni.lat, uni.lng], { icon: makeIcon(uni.is_reached) })
+    .addTo(map)
+    .bindPopup(`
+      <div class="uni-popup" style="min-width:180px">
+        <div class="uni-name">${uni.name}</div>
+        <div class="uni-type">${uni.type}</div>
+        ${uni.address ? `<div class="uni-stat" style="margin-bottom:4px"><i>📍</i> ${uni.address}</div>` : ''}
+        <div class="uni-stat">
+          <span style="color:${uni.is_reached ? '#27ae60' : '#e74c3c'};font-weight:700">
+            ${uni.is_reached ? '✓ Reached' : '✗ Not yet reached'}
+          </span>
+        </div>
+        <div class="uni-stat" style="margin-top:4px">👥 ${uni.student_count} student${uni.student_count !== 1 ? 's' : ''}</div>
+      </div>
+    `);
+  markers[uni.name] = marker;
+});
+
+function focusUni(lat, lng, name) {
+  map.setView([lat, lng], 16, { animate: true });
+  if (markers[name]) markers[name].openPopup();
+}
+</script>
+{% endblock %}
