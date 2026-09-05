@@ -15,3 +15,6 @@ dj-database-url>=2.1
 # Cloudinary for media (student photos)
 cloudinary>=1.40
 django-cloudinary-storage>=0.3
+
+# xlsx import for bulk student loading
+openpyxl>=3.1

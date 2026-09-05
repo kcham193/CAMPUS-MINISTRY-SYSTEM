@@ -18,3 +18,8 @@ else:
     print('Superuser already exists, skipping.')
 "
 fi
+
+# One-time student import. Remove after first successful run.
+if [[ "$RUN_IMPORT" == "1" ]]; then
+  python manage.py import_students
+fi
