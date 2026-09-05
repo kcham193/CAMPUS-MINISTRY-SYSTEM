@@ -118,14 +118,6 @@ class Student(models.Model):
         return f"{self.first_name} {self.last_name}"
 
     @property
-    def attendance_rate(self):
-        total = self.attendance_set.count()
-        if total == 0:
-            return 0
-        attended = self.attendance_set.filter(attended=True).count()
-        return round((attended / total) * 100)
-
-    @property
     def initials(self):
         return f"{self.first_name[0]}{self.last_name[0]}".upper()
 
@@ -152,7 +144,7 @@ class Event(models.Model):
     event_date = models.DateField()
     event_time = models.TimeField(null=True, blank=True)
     location = models.CharField(max_length=300)
-    expected_attendance = models.IntegerField(default=0)
+    attended_students = models.IntegerField(default=0)
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -161,38 +153,6 @@ class Event(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.event_date})"
-
-    @property
-    def actual_attendance(self):
-        return self.attendance_set.filter(attended=True).count()
-
-    @property
-    def attendance_rate(self):
-        total = self.attendance_set.count()
-        if total == 0:
-            return 0
-        return round((self.actual_attendance / total) * 100)
-
-    @property
-    def participants_count(self):
-        return self.attendance_set.filter(participated=True).count()
-
-
-class Attendance(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    event = models.ForeignKey(Event, on_delete=models.CASCADE)
-    attended = models.BooleanField(default=False)
-    participated = models.BooleanField(default=False)
-    notes = models.CharField(max_length=300, blank=True)
-    recorded_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ['student', 'event']
-        ordering = ['student__first_name']
-
-    def __str__(self):
-        status = "✓" if self.attended else "✗"
-        return f"{self.student} @ {self.event.title} [{status}]"
 
 
 class MinistryGoal(models.Model):

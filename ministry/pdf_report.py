@@ -38,7 +38,7 @@ CAT_COLORS = {
 
 def generate_pdf_report(output):
     """Generate the full ministry PDF report"""
-    from .models import Student, Category, Event, Attendance, University
+    from .models import Student, Category, Event, University
 
     doc = SimpleDocTemplate(
         output,
@@ -139,26 +139,22 @@ def generate_pdf_report(output):
     progress_pct = min(round(total_students / total_goal * 100, 1), 100)
     total_events = Event.objects.count()
     universities_reached = University.objects.filter(is_reached=True).count()
-    total_att = Attendance.objects.filter(attended=True).count()
-    total_possible = Attendance.objects.count()
-    att_rate = round(total_att / total_possible * 100) if total_possible else 0
 
     story.append(Paragraph('Executive Summary', heading_style))
 
     metrics = [
-        ('Students Reached', str(total_students), f'Goal: {total_goal:,}'),
+        ('Students Registered', str(total_students), f'Goal: {total_goal:,}'),
         ('Overall Progress', f'{progress_pct}%', 'of 2-year goal'),
         ('Events Held', str(total_events), f'{Event.objects.filter(is_completed=True).count()} completed'),
         ('Universities Reached', str(universities_reached), f'of {University.objects.count()} in DSM'),
-        ('Avg. Attendance Rate', f'{att_rate}%', 'across all events'),
     ]
 
     metrics_data = [[
         _make_metric_cell(label, value, sub)
         for label, value, sub in metrics
     ]]
-    col_w = doc.width / 5
-    metrics_table = Table(metrics_data, colWidths=[col_w] * 5, rowHeights=[2.5 * cm])
+    col_w = doc.width / 4
+    metrics_table = Table(metrics_data, colWidths=[col_w] * 4, rowHeights=[2.5 * cm])
     metrics_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, -1), NAVY),
         ('TOPPADDING', (0, 0), (-1, -1), 8),
@@ -282,7 +278,6 @@ def generate_pdf_report(output):
         Paragraph('Date', ParagraphStyle('H', fontName='Helvetica-Bold', fontSize=9, textColor=WHITE)),
         Paragraph('Location', ParagraphStyle('H', fontName='Helvetica-Bold', fontSize=9, textColor=WHITE)),
         Paragraph('Attended', ParagraphStyle('H', fontName='Helvetica-Bold', fontSize=9, textColor=WHITE)),
-        Paragraph('Rate', ParagraphStyle('H', fontName='Helvetica-Bold', fontSize=9, textColor=WHITE)),
     ]
     ev_rows = [ev_header]
     for ev in events:
@@ -291,14 +286,13 @@ def generate_pdf_report(output):
             Paragraph(ev.get_event_type_display(), small_style),
             Paragraph(ev.event_date.strftime('%d %b %Y'), small_style),
             Paragraph(ev.location[:30] + '...' if len(ev.location) > 30 else ev.location, small_style),
-            Paragraph(str(ev.actual_attendance), body_style),
-            Paragraph(f'{ev.attendance_rate}%', small_style),
+            Paragraph(str(ev.attended_students), body_style),
         ])
 
     if len(ev_rows) > 1:
         ev_table = Table(ev_rows, colWidths=[
-            doc.width * 0.28, doc.width * 0.15, doc.width * 0.13,
-            doc.width * 0.22, doc.width * 0.1, doc.width * 0.12
+            doc.width * 0.32, doc.width * 0.16, doc.width * 0.14,
+            doc.width * 0.26, doc.width * 0.12
         ], repeatRows=1)
         ev_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), NAVY),

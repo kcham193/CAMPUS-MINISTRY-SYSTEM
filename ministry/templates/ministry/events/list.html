@@ -44,9 +44,7 @@
           <th>Type</th>
           <th>Date</th>
           <th>Location</th>
-          <th>Expected</th>
           <th>Attended</th>
-          <th>Rate</th>
           <th>Status</th>
           <th style="text-align:right">{% if is_admin %}Actions{% else %}View{% endif %}</th>
         </tr>
@@ -62,16 +60,7 @@
           <td><span class="badge-ci badge-type">{{ event.get_event_type_display }}</span></td>
           <td style="font-size:12.5px;color:var(--muted)">{{ event.event_date|date:"d M Y" }}</td>
           <td style="font-size:12px;color:var(--muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ event.location }}</td>
-          <td style="font-size:13px">{{ event.expected_attendance }}</td>
-          <td style="font-size:13px;font-weight:600;color:var(--gold)">{{ event.actual_attendance }}</td>
-          <td>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div class="ci-progress" style="width:50px">
-                <div class="ci-progress-bar" style="background:#2ecc71;width:{{ event.attendance_rate }}%"></div>
-              </div>
-              <span style="font-size:11px;color:var(--muted)">{{ event.attendance_rate }}%</span>
-            </div>
-          </td>
+          <td style="font-size:13px;font-weight:600;color:var(--gold)">{{ event.attended_students }}</td>
           <td>
             {% if event.is_completed %}
             <span class="badge-ci badge-active"><i class="bi bi-check-circle-fill" style="font-size:9px"></i> Done</span>
@@ -85,7 +74,6 @@
             <div style="display:flex;gap:6px;justify-content:flex-end">
               <a href="{% url 'event_detail' event.pk %}" class="btn-ci btn-ci-outline" style="padding:5px 10px;font-size:12px"><i class="bi bi-eye"></i></a>
               {% if is_admin %}
-              <a href="{% url 'event_attendance' event.pk %}" class="btn-ci btn-ci-success" style="padding:5px 10px;font-size:12px" title="Mark Attendance"><i class="bi bi-check2-all"></i></a>
               <a href="{% url 'event_edit' event.pk %}" class="btn-ci btn-ci-outline" style="padding:5px 10px;font-size:12px"><i class="bi bi-pencil"></i></a>
               <a href="{% url 'event_delete' event.pk %}" class="btn-ci btn-ci-danger" style="padding:5px 10px;font-size:12px"><i class="bi bi-trash"></i></a>
               {% endif %}
@@ -94,7 +82,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="9" style="text-align:center;padding:50px;color:var(--muted)">
+          <td colspan="7" style="text-align:center;padding:50px;color:var(--muted)">
             <i class="bi bi-calendar-x" style="font-size:36px;display:block;margin-bottom:10px;color:var(--dim)"></i>
             {% if is_admin %}No events yet. <a href="{% url 'event_create' %}">Create the first event →</a>{% else %}No events yet.{% endif %}
           </td>

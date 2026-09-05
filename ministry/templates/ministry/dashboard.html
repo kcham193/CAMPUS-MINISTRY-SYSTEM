@@ -67,7 +67,7 @@
   <div class="stat-tile fade-up fade-up-1">
     <div class="tile-icon" style="background:rgba(200,146,26,.15)"><i class="bi bi-people-fill" style="color:var(--gold)"></i></div>
     <div class="tile-value" data-counter data-target="{{ total_students }}">0</div>
-    <div class="tile-label">Students Reached</div>
+    <div class="tile-label">Students Registered</div>
     <div class="tile-sub" style="color:var(--muted)">Goal: {{ total_goal|floatformat:"0" }} total</div>
     <div style="margin-top:12px">
       <div class="ci-progress"><div class="ci-progress-bar" style="background:var(--gold);width:0" data-width="{{ overall_progress }}%"></div></div>
@@ -186,7 +186,7 @@
           </div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px">
             {{ event.event_date|date:"d M Y" }} &nbsp;·&nbsp;
-            {{ event.actual_attendance }} attended
+            {{ event.attended_students }} attended
             {% if event.is_completed %}<span class="badge-ci badge-active" style="padding:1px 7px;font-size:9.5px">Done</span>{% endif %}
           </div>
         </div>
@@ -238,34 +238,6 @@
     </div>
   </div>
 </div>
-
-<!-- ── TOP ACTIVE STUDENTS ─────────────────────────────────────────── -->
-{% if top_students %}
-<div class="card-ci fade-up">
-  <div class="card-ci-header">
-    <div class="card-ci-title"><i class="bi bi-trophy-fill" style="color:var(--gold)"></i> Most Active Students</div>
-    <span style="font-size:12px;color:var(--muted)">By event attendance</span>
-  </div>
-  <div class="card-ci-body" style="padding:12px 18px">
-    <div style="display:flex;gap:14px;flex-wrap:wrap">
-      {% for student in top_students %}
-      <a href="{% url 'student_detail' student.pk %}" style="text-decoration:none;flex:1;min-width:160px">
-        <div class="student-card" style="flex-direction:column;align-items:flex-start;gap:8px">
-          <div style="display:flex;align-items:center;gap:10px;width:100%">
-            <div class="top-student-rank">{{ forloop.counter }}</div>
-            <div class="student-avatar" style="width:32px;height:32px;font-size:12px;background:linear-gradient(135deg,{{ student.primary_category.color|default:'#888' }},#333)">{{ student.initials }}</div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ student.full_name }}</div>
-              <div style="font-size:10.5px;color:var(--muted)">{{ student.att_count }} events</div>
-            </div>
-          </div>
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-</div>
-{% endif %}
 
 {% endblock %}
 

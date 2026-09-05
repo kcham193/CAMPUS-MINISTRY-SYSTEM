@@ -1,14 +1,13 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
-from django.utils import timezone
 from datetime import timedelta, date
 import json
 
-from .models import Student, Event, Attendance, University, Category, MinistryGoal
-from .forms import StudentForm, EventForm, UniversityForm, AttendanceBulkForm
+from .models import Student, Event, University, Category, MinistryGoal
+from .forms import StudentForm, EventForm, UniversityForm
 from .permissions import admin_required
 
 
@@ -68,11 +67,6 @@ def get_dashboard_context():
 @login_required
 def dashboard(request):
     ctx = get_dashboard_context()
-    # Top students by attendance
-    top_students = Student.objects.filter(is_active=True).annotate(
-        att_count=Count('attendance', filter=Q(attendance__attended=True))
-    ).order_by('-att_count')[:5]
-    ctx['top_students'] = top_students
     ctx['latest_students'] = Student.objects.filter(is_active=True).order_by('-date_joined')[:6]
     return render(request, 'ministry/dashboard.html', ctx)
 
@@ -117,12 +111,8 @@ def student_list(request):
 @login_required
 def student_detail(request, pk):
     student = get_object_or_404(Student, pk=pk)
-    attendances = student.attendance_set.select_related('event').order_by('-event__event_date')
     return render(request, 'ministry/students/detail.html', {
         'student': student,
-        'attendances': attendances,
-        'total_events': attendances.count(),
-        'attended_events': attendances.filter(attended=True).count(),
     })
 
 
@@ -189,12 +179,8 @@ def event_list(request):
 @login_required
 def event_detail(request, pk):
     event = get_object_or_404(Event, pk=pk)
-    attendances = event.attendance_set.select_related(
-        'student', 'student__university'
-    ).prefetch_related('student__categories')
     return render(request, 'ministry/events/detail.html', {
         'event': event,
-        'attendances': attendances,
     })
 
 
@@ -205,7 +191,7 @@ def event_create(request):
         if form.is_valid():
             event = form.save()
             messages.success(request, f'✓ Event "{event.title}" created!')
-            return redirect('event_attendance', pk=event.pk)
+            return redirect('event_detail', pk=event.pk)
     else:
         form = EventForm()
     return render(request, 'ministry/events/form.html', {'form': form, 'title': 'Create Event'})
@@ -235,42 +221,6 @@ def event_delete(request, pk):
         messages.success(request, 'Event deleted.')
         return redirect('event_list')
     return render(request, 'ministry/events/confirm_delete.html', {'event': event})
-
-
-@admin_required
-def event_attendance(request, pk):
-    event = get_object_or_404(Event, pk=pk)
-    students = Student.objects.filter(is_active=True).select_related('university').prefetch_related('categories').order_by('first_name')
-
-    # Get existing attendance records
-    existing = {a.student_id: a for a in event.attendance_set.all()}
-
-    if request.method == 'POST':
-        for student in students:
-            attended = request.POST.get(f'attended_{student.id}') == 'on'
-            participated = request.POST.get(f'participated_{student.id}') == 'on'
-            notes = request.POST.get(f'notes_{student.id}', '')
-            if student.id in existing:
-                att = existing[student.id]
-                att.attended = attended
-                att.participated = participated
-                att.notes = notes
-                att.save()
-            else:
-                Attendance.objects.create(
-                    student=student, event=event,
-                    attended=attended, participated=participated, notes=notes
-                )
-        event.is_completed = True
-        event.save()
-        messages.success(request, f'✓ Attendance for "{event.title}" saved!')
-        return redirect('event_detail', pk=pk)
-
-    return render(request, 'ministry/events/attendance.html', {
-        'event': event,
-        'students': students,
-        'existing': existing,
-    })
 
 
 # ─── UNIVERSITIES ────────────────────────────────────────────────────────────
@@ -345,10 +295,6 @@ def university_delete(request, pk):
 def reports_index(request):
     ctx = get_dashboard_context()
     ctx['universities'] = University.objects.all()
-    # Attendance stats
-    total_att = Attendance.objects.filter(attended=True).count()
-    total_possible = Attendance.objects.count()
-    ctx['overall_attendance_rate'] = round((total_att / total_possible * 100) if total_possible else 0)
     ctx['total_events'] = Event.objects.count()
     ctx['completed_events'] = Event.objects.filter(is_completed=True).count()
     return render(request, 'ministry/reports/index.html', ctx)

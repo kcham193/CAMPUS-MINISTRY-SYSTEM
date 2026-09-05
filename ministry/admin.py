@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Student, Event, Attendance, University, Category, MinistryGoal
+from .models import Student, Event, University, Category, MinistryGoal
 
 
 @admin.register(Category)
@@ -33,16 +33,9 @@ class StudentAdmin(admin.ModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ['title', 'event_type', 'event_date', 'location', 'actual_attendance', 'is_completed']
+    list_display = ['title', 'event_type', 'event_date', 'location', 'attended_students', 'is_completed']
     list_filter = ['event_type', 'is_completed']
     date_hierarchy = 'event_date'
-
-
-@admin.register(Attendance)
-class AttendanceAdmin(admin.ModelAdmin):
-    list_display = ['student', 'event', 'attended', 'participated']
-    list_filter = ['attended', 'participated', 'event']
-    search_fields = ['student__first_name', 'student__last_name']
 
 
 @admin.register(MinistryGoal)

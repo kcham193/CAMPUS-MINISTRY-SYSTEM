@@ -8,7 +8,7 @@
   <span>/</span> {{ event.title }}
 </div>
 
-<div class="grid-2" style="margin-top:16px;align-items:start">
+<div style="margin-top:16px">
   <!-- Event Info -->
   <div>
     <div class="card-ci fade-up" style="margin-bottom:20px">
@@ -54,26 +54,15 @@
     </div>
 
     <!-- Stats -->
-    <div class="grid-2" style="gap:14px;margin-bottom:20px">
+    <div style="margin-bottom:20px">
       <div class="stat-tile" style="padding:18px">
-        <div class="tile-value" style="font-size:28px;color:var(--gold)">{{ event.actual_attendance }}</div>
-        <div class="tile-label">Attended</div>
-        <div class="tile-sub">Expected: {{ event.expected_attendance }}</div>
-      </div>
-      <div class="stat-tile" style="padding:18px">
-        <div class="tile-value" style="font-size:28px;color:#2ecc71">{{ event.attendance_rate }}%</div>
-        <div class="tile-label">Attendance Rate</div>
-        <div class="ci-progress" style="margin-top:10px">
-          <div class="ci-progress-bar" style="background:#2ecc71;width:{{ event.attendance_rate }}%"></div>
-        </div>
+        <div class="tile-value" style="font-size:28px;color:var(--gold)">{{ event.attended_students }}</div>
+        <div class="tile-label">Students Attended</div>
       </div>
     </div>
 
     {% if is_admin %}
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <a href="{% url 'event_attendance' event.pk %}" class="btn-ci btn-ci-success">
-        <i class="bi bi-check2-all"></i> Mark Attendance
-      </a>
       <a href="{% url 'event_edit' event.pk %}" class="btn-ci btn-ci-outline">
         <i class="bi bi-pencil"></i> Edit
       </a>
@@ -82,57 +71,6 @@
       </a>
     </div>
     {% endif %}
-  </div>
-
-  <!-- Attendance List -->
-  <div class="card-ci fade-up fade-up-2">
-    <div class="card-ci-header">
-      <div class="card-ci-title"><i class="bi bi-people-fill" style="color:#5c85f5"></i> Attendance Register</div>
-      <span style="font-size:12px;color:var(--muted)">{{ event.participants_count }} participated</span>
-    </div>
-    <div style="overflow-x:auto;max-height:560px">
-      <table class="ci-table">
-        <thead>
-          <tr><th>Student</th><th>University</th><th>Attended</th><th>Participated</th></tr>
-        </thead>
-        <tbody>
-          {% for att in attendances %}
-          <tr>
-            <td>
-              <div style="display:flex;align-items:center;gap:10px">
-                <div class="student-avatar" style="width:32px;height:32px;font-size:12px;
-                  background:linear-gradient(135deg,{{ att.student.primary_category.color|default:'#555' }},#222)">
-                  {{ att.student.initials }}
-                </div>
-                <a href="{% url 'student_detail' att.student.pk %}" style="color:var(--text);font-size:13px">
-                  {{ att.student.full_name }}
-                </a>
-              </div>
-            </td>
-            <td style="font-size:11.5px;color:var(--muted)">{{ att.student.university|default:"—" }}</td>
-            <td>
-              {% if att.attended %}
-              <i class="bi bi-check-circle-fill" style="color:#2ecc71"></i>
-              {% else %}
-              <i class="bi bi-x-circle" style="color:var(--dim)"></i>
-              {% endif %}
-            </td>
-            <td>
-              {% if att.participated %}
-              <i class="bi bi-star-fill" style="color:#5c85f5;font-size:13px"></i>
-              {% else %}<span style="color:var(--dim)">—</span>{% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">
-              {% if is_admin %}No attendance recorded. <a href="{% url 'event_attendance' event.pk %}">Mark attendance →</a>{% else %}No attendance recorded.{% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
   </div>
 </div>
 {% endblock %}

@@ -6,7 +6,7 @@ Management command to seed initial data:
 """
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
-from ministry.models import Category, University, Student, Event, Attendance, MinistryGoal
+from ministry.models import Category, University, Student, Event, MinistryGoal
 from datetime import date, timedelta
 import random
 
@@ -283,27 +283,16 @@ class Command(BaseCommand):
             ('End of Semester Celebration', 'other'),
         ]
 
-        past_events = []
         for i, (title, etype) in enumerate(event_titles):
-            ev = Event.objects.create(
+            Event.objects.create(
                 title=title,
                 event_type=etype,
                 event_date=date.today() - timedelta(days=i * 20 + 5),
                 location='TAG SCT Changanyikeni Church, Dar es Salaam',
-                expected_attendance=random.randint(20, 60),
+                attended_students=random.randint(20, 60),
                 is_completed=True,
                 description=f'A powerful {etype} gathering for our campus students.',
             )
-            # Create attendance records
-            attending = random.sample(students, min(random.randint(15, 40), len(students)))
-            for s in students:
-                attended = s in attending
-                Attendance.objects.create(
-                    student=s, event=ev,
-                    attended=attended,
-                    participated=attended and random.random() > 0.4,
-                )
-            past_events.append(ev)
 
         # One upcoming event
         Event.objects.create(
@@ -311,7 +300,7 @@ class Command(BaseCommand):
             event_type='conference',
             event_date=date.today() + timedelta(days=14),
             location='TAG SCT Changanyikeni Church — Main Hall',
-            expected_attendance=100,
+            attended_students=0,
             is_completed=False,
             description='Our flagship semester rally — all campus students invited!',
         )

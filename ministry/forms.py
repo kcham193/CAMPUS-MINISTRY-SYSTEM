@@ -1,5 +1,5 @@
 from django import forms
-from .models import Student, Event, Attendance, University, Category
+from .models import Student, Event, University, Category
 
 
 class StudentForm(forms.ModelForm):
@@ -48,7 +48,7 @@ class EventForm(forms.ModelForm):
         model = Event
         fields = [
             'title', 'description', 'event_type', 'event_date',
-            'event_time', 'location', 'expected_attendance', 'is_completed'
+            'event_time', 'location', 'attended_students', 'is_completed'
         ]
         widgets = {
             'event_date': forms.DateInput(attrs={'type': 'date'}),
@@ -82,27 +82,3 @@ class UniversityForm(forms.ModelForm):
         self.fields['is_reached'].widget.attrs['class'] = 'form-check-input'
 
 
-class AttendanceBulkForm(forms.Form):
-    """Used to mark attendance for all students at once for an event"""
-
-    def __init__(self, *args, students=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        if students:
-            for student in students:
-                self.fields[f'attended_{student.id}'] = forms.BooleanField(
-                    required=False,
-                    label=student.full_name,
-                    widget=forms.CheckboxInput(attrs={'class': 'form-check-input attended-check'})
-                )
-                self.fields[f'participated_{student.id}'] = forms.BooleanField(
-                    required=False,
-                    label='Participated',
-                    widget=forms.CheckboxInput(attrs={'class': 'form-check-input participated-check'})
-                )
-                self.fields[f'notes_{student.id}'] = forms.CharField(
-                    required=False,
-                    widget=forms.TextInput(attrs={
-                        'class': 'form-control ci-input form-control-sm',
-                        'placeholder': 'Notes...'
-                    })
-                )

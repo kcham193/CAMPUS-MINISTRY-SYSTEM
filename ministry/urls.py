@@ -18,7 +18,6 @@ urlpatterns = [
     path('events/<int:pk>/', views.event_detail, name='event_detail'),
     path('events/<int:pk>/edit/', views.event_edit, name='event_edit'),
     path('events/<int:pk>/delete/', views.event_delete, name='event_delete'),
-    path('events/<int:pk>/attendance/', views.event_attendance, name='event_attendance'),
 
     # Universities
     path('universities/', views.university_map, name='university_map'),

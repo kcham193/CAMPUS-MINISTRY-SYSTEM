@@ -15,8 +15,8 @@
         Remove Student?
       </h2>
       <p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:24px">
-        You are about to permanently remove <strong style="color:var(--text)">{{ student.full_name }}</strong>
-        and all their attendance records. This cannot be undone.
+        You are about to permanently remove <strong style="color:var(--text)">{{ student.full_name }}</strong>.
+        This cannot be undone.
       </p>
       <form method="post">
         {% csrf_token %}

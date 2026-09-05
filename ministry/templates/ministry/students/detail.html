@@ -2,17 +2,13 @@
 {% block title %}{{ student.full_name }}{% endblock %}
 {% block topbar_title %}Student Profile{% endblock %}
 
-{% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-{% endblock %}
-
 {% block content %}
 <div class="breadcrumb-ci fade-up">
   <a href="{% url 'student_list' %}">Students</a>
   <span>/</span> {{ student.full_name }}
 </div>
 
-<div class="grid-2" style="margin-top:16px;align-items:start">
+<div style="margin-top:16px;max-width:640px">
   <!-- Profile Card -->
   <div>
     <div class="card-ci fade-up" style="margin-bottom:20px">
@@ -104,75 +100,6 @@
       </a>
     </div>
     {% endif %}
-  </div>
-
-  <!-- Attendance & Stats -->
-  <div>
-    <!-- Stats Row -->
-    <div class="grid-2" style="margin-bottom:20px">
-      <div class="stat-tile fade-up" style="padding:18px">
-        <div class="tile-value" style="font-size:28px">{{ total_events }}</div>
-        <div class="tile-label">Total Events</div>
-      </div>
-      <div class="stat-tile fade-up fade-up-1" style="padding:18px">
-        <div class="tile-value" style="font-size:28px;color:var(--gold)">{{ student.attendance_rate }}%</div>
-        <div class="tile-label">Attendance Rate</div>
-        <div class="ci-progress" style="margin-top:10px">
-          <div class="ci-progress-bar" style="background:var(--gold);width:{{ student.attendance_rate }}%"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Attendance History -->
-    <div class="card-ci fade-up">
-      <div class="card-ci-header">
-        <div class="card-ci-title"><i class="bi bi-check2-all" style="color:#2ecc71"></i> Attendance History</div>
-        <span style="font-size:12px;color:var(--muted)">{{ attended_events }}/{{ total_events }} attended</span>
-      </div>
-      <div style="overflow-x:auto;max-height:480px">
-        <table class="ci-table">
-          <thead>
-            <tr>
-              <th>Event</th>
-              <th>Date</th>
-              <th>Attended</th>
-              <th>Participated</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for att in attendances %}
-            <tr>
-              <td>
-                <a href="{% url 'event_detail' att.event.pk %}" style="color:var(--text);font-size:13px">
-                  {{ att.event.title }}
-                </a>
-                <div style="font-size:10.5px;color:var(--muted)">{{ att.event.get_event_type_display }}</div>
-              </td>
-              <td style="font-size:12px;color:var(--muted)">{{ att.event.event_date|date:"d M Y" }}</td>
-              <td>
-                {% if att.attended %}
-                <span style="color:#2ecc71"><i class="bi bi-check-circle-fill"></i></span>
-                {% else %}
-                <span style="color:var(--dim)"><i class="bi bi-x-circle"></i></span>
-                {% endif %}
-              </td>
-              <td>
-                {% if att.participated %}
-                <span style="color:#5c85f5"><i class="bi bi-star-fill" style="font-size:12px"></i> Yes</span>
-                {% else %}
-                <span style="color:var(--dim)">—</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">No attendance records yet</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
   </div>
 </div>
 {% endblock %}
