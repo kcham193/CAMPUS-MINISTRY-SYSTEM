@@ -39,6 +39,16 @@ CAT_COLS = {
     17: 'worship',
 }
 
+# Category targets (kept in sync with seed_data.py so the import can bootstrap
+# them when seed_data has not been run on the target environment).
+CATEGORY_TARGETS = {
+    'gospel': 50,
+    'political': 100,
+    'worship': 300,
+    'business': 200,
+    'career': 350,
+}
+
 
 class Command(BaseCommand):
     help = 'Import students from data/students.xlsx (KoboToolbox export).'
@@ -62,12 +72,19 @@ class Command(BaseCommand):
         wb = openpyxl.load_workbook(xlsx_path, data_only=True)
         ws = wb.active
 
-        categories_by_slug = {c.slug: c for c in Category.objects.all()}
+        # Ensure every canonical category exists AND has its target set.
+        # This heals categories that were auto-created earlier with target=0.
+        categories_by_slug = {}
         for slug, _label in Category.CATEGORY_CHOICES:
-            if slug not in categories_by_slug:
-                categories_by_slug[slug] = Category.objects.create(slug=slug)
+            target = CATEGORY_TARGETS.get(slug, 0)
+            cat, _ = Category.objects.get_or_create(slug=slug)
+            if cat.target_count != target:
+                cat.target_count = target
+                cat.save(update_fields=['target_count'])
+            categories_by_slug[slug] = cat
 
         universities_cache = {}
+        universities_with_students = set()
         created_count = 0
         skipped_count = 0
         errors = []
@@ -83,6 +100,9 @@ class Command(BaseCommand):
             year = self._parse_year(row[COL_YEAR])
             university = self._resolve_university(row[COL_UNIVERSITY], universities_cache)
             category_slugs = [slug for col_idx, slug in CAT_COLS.items() if row[col_idx] == 1]
+
+            if university is not None:
+                universities_with_students.add(university.pk)
 
             if Student.objects.filter(email=email).exists():
                 skipped_count += 1
@@ -113,8 +133,21 @@ class Command(BaseCommand):
             except Exception as e:
                 errors.append(f'row {row_num} ({first_name} {last_name}): {e}')
 
+        # Any university that now has students on the roster counts as reached.
+        # Use the DB rather than only the cache so re-runs stay in sync.
+        reached_updated = 0
+        if not opts['dry_run']:
+            active_uni_ids = set(
+                Student.objects.filter(is_active=True, university__isnull=False)
+                .values_list('university_id', flat=True).distinct()
+            )
+            reached_updated = University.objects.filter(
+                pk__in=active_uni_ids, is_reached=False
+            ).update(is_reached=True)
+
         self.stdout.write(self.style.SUCCESS(
-            f'Import complete. Created: {created_count}, Skipped (already exist): {skipped_count}'
+            f'Import complete. Created: {created_count}, Skipped (already exist): {skipped_count}, '
+            f'Universities marked reached: {reached_updated}'
         ))
         if errors:
             self.stdout.write(self.style.WARNING(f'{len(errors)} errors:'))
