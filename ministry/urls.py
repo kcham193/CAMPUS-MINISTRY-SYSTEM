@@ -22,6 +22,9 @@ urlpatterns = [
     path('events/<int:pk>/budget/edit/', views.event_budget_edit, name='event_budget_edit'),
     path('events/<int:pk>/budget/pdf/', views.event_budget_pdf, name='event_budget_pdf'),
 
+    # Budgets overview
+    path('budgets/', views.budget_list, name='budget_list'),
+
     # Universities
     path('universities/', views.university_map, name='university_map'),
     path('universities/add/', views.university_create, name='university_create'),

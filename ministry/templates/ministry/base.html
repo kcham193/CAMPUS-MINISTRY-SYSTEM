@@ -437,8 +437,11 @@
     <a href="{% url 'student_list' %}" class="nav-item {% if 'student' in request.resolver_match.url_name %}active{% endif %}">
       <i class="bi bi-people-fill"></i> Students
     </a>
-    <a href="{% url 'event_list' %}" class="nav-item {% if 'event' in request.resolver_match.url_name %}active{% endif %}">
+    <a href="{% url 'event_list' %}" class="nav-item {% if 'event' in request.resolver_match.url_name and 'budget' not in request.resolver_match.url_name %}active{% endif %}">
       <i class="bi bi-calendar3"></i> Events
+    </a>
+    <a href="{% url 'budget_list' %}" class="nav-item {% if 'budget' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-cash-stack"></i> Event Budgets
     </a>
     <a href="{% url 'university_map' %}" class="nav-item {% if 'university' in request.resolver_match.url_name %}active{% endif %}">
       <i class="bi bi-pin-map-fill"></i> University Map

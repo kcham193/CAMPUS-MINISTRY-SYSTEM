@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponse
 from datetime import timedelta, date
+from decimal import Decimal
+from collections import defaultdict
 import json
 
 from .models import Student, Event, University, Category, MinistryGoal, EventBudget
@@ -274,6 +276,22 @@ def event_budget_pdf(request, pk):
     response['Content-Disposition'] = f'attachment; filename="Budget_{safe_title}_{date.today()}.pdf"'
     generate_event_budget_pdf(response, event)
     return response
+
+
+@login_required
+def budget_list(request):
+    budgets = EventBudget.objects.select_related('event').prefetch_related('items').order_by('-event__event_date')
+    events_without_budget = Event.objects.filter(budget__isnull=True).order_by('-event_date')
+
+    totals_by_currency = defaultdict(lambda: Decimal('0'))
+    for b in budgets:
+        totals_by_currency[b.currency] += b.total_cost
+
+    return render(request, 'ministry/budgets/list.html', {
+        'budgets': budgets,
+        'events_without_budget': events_without_budget,
+        'totals_by_currency': dict(sorted(totals_by_currency.items())),
+    })
 
 
 # ─── UNIVERSITIES ────────────────────────────────────────────────────────────
