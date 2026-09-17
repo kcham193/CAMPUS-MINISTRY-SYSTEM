@@ -1,5 +1,6 @@
 from django import forms
-from .models import Student, Event, University, Category
+from django.forms import inlineformset_factory
+from .models import Student, Event, University, Category, EventBudget, BudgetItem
 
 
 class StudentForm(forms.ModelForm):
@@ -64,6 +65,47 @@ class EventForm(forms.ModelForm):
             existing = field.widget.attrs.get('class', '')
             field.widget.attrs['class'] = f'{existing} form-control ci-input'.strip()
         self.fields['is_completed'].widget.attrs['class'] = 'form-check-input'
+
+
+class EventBudgetForm(forms.ModelForm):
+    class Meta:
+        model = EventBudget
+        fields = ['currency', 'notes']
+        widgets = {
+            'currency': forms.TextInput(attrs={'placeholder': 'e.g. TZS'}),
+            'notes': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Overall notes about this budget (optional)'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            existing = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = f'{existing} form-control ci-input'.strip()
+
+
+class BudgetItemForm(forms.ModelForm):
+    class Meta:
+        model = BudgetItem
+        fields = ['category', 'description', 'quantity', 'unit_cost', 'notes']
+        widgets = {
+            'description': forms.TextInput(attrs={'placeholder': 'Description (optional)'}),
+            'quantity': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'unit_cost': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'notes': forms.TextInput(attrs={'placeholder': 'Notes (optional)'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            existing = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = f'{existing} form-control ci-input'.strip()
+            field.widget.attrs['style'] = 'width:100%;padding:8px 10px !important;font-size:13px !important'
+
+
+BudgetItemFormSet = inlineformset_factory(
+    EventBudget, BudgetItem, form=BudgetItemForm,
+    extra=1, can_delete=True,
+)
 
 
 class UniversityForm(forms.ModelForm):

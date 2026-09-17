@@ -73,6 +73,7 @@
           <td>
             <div style="display:flex;gap:6px;justify-content:flex-end">
               <a href="{% url 'event_detail' event.pk %}" class="btn-ci btn-ci-outline" style="padding:5px 10px;font-size:12px"><i class="bi bi-eye"></i></a>
+              <a href="{% url 'event_budget_detail' event.pk %}" class="btn-ci btn-ci-outline" style="padding:5px 10px;font-size:12px" title="Budget"><i class="bi bi-cash-stack"></i></a>
               {% if is_admin %}
               <a href="{% url 'event_edit' event.pk %}" class="btn-ci btn-ci-outline" style="padding:5px 10px;font-size:12px"><i class="bi bi-pencil"></i></a>
               <a href="{% url 'event_delete' event.pk %}" class="btn-ci btn-ci-danger" style="padding:5px 10px;font-size:12px"><i class="bi bi-trash"></i></a>

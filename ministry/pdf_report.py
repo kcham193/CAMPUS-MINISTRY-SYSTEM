@@ -17,6 +17,7 @@ from reportlab.graphics.charts.piecharts import Pie
 from reportlab.graphics import renderPDF
 from reportlab.lib.colors import HexColor
 from datetime import date, datetime
+from decimal import Decimal
 
 # Brand colors (primary is deep teal; NAVY name kept for backwards compat).
 NAVY = HexColor('#0d5e64')
@@ -367,3 +368,181 @@ def _make_inline_progress(pct, color):
     fill_w = max(1, w * pct / 100)
     d.add(Rect(0, 2, fill_w, h - 4, fillColor=color, strokeColor=None))
     return d
+
+
+def generate_event_budget_pdf(output, event):
+    """Generate a structured PDF budget plan for a single event"""
+    budget = event.budget
+    items = budget.items.all()
+    currency = budget.currency
+
+    doc = SimpleDocTemplate(
+        output,
+        pagesize=A4,
+        rightMargin=1.5 * cm,
+        leftMargin=1.5 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
+        title=f"Event Budget - {event.title}",
+        author="TAG SCT Changanyikeni",
+    )
+
+    styles = getSampleStyleSheet()
+    story = []
+
+    heading_style = ParagraphStyle(
+        'EBHeading', parent=styles['Heading2'],
+        fontName='Helvetica-Bold', fontSize=13,
+        textColor=NAVY, spaceBefore=14, spaceAfter=6,
+    )
+    body_style = ParagraphStyle(
+        'EBBody', parent=styles['Normal'],
+        fontName='Helvetica', fontSize=10,
+        textColor=HexColor('#333333'), spaceAfter=6, leading=14,
+    )
+    small_style = ParagraphStyle(
+        'EBSmall', parent=styles['Normal'],
+        fontName='Helvetica', fontSize=8,
+        textColor=MID_GRAY,
+    )
+    th_style = ParagraphStyle('EBTh', fontName='Helvetica-Bold', fontSize=9, textColor=WHITE)
+
+    # ── HEADER ──────────────────────────────────────────────────────────
+    header_data = [[
+        Paragraph('CAMPUS IMPACT', ParagraphStyle('H', fontName='Helvetica-Bold',
+                   fontSize=26, textColor=WHITE, leading=30)),
+    ]]
+    header_table = Table(header_data, colWidths=[doc.width])
+    header_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), NAVY),
+        ('TOPPADDING', (0, 0), (-1, -1), 16),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('LEFTPADDING', (0, 0), (-1, -1), 20),
+    ]))
+    story.append(header_table)
+
+    gold_bar_data = [[
+        Paragraph(f'EVENT BUDGET PLAN — {event.title.upper()}',
+                  ParagraphStyle('G', fontName='Helvetica-Bold', fontSize=10, textColor=NAVY)),
+    ]]
+    gold_bar = Table(gold_bar_data, colWidths=[doc.width])
+    gold_bar.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), GOLD),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('LEFTPADDING', (0, 0), (-1, -1), 20),
+    ]))
+    story.append(gold_bar)
+    story.append(Spacer(1, 0.4 * cm))
+
+    meta_data = [[
+        Paragraph(f'Generated: {datetime.now().strftime("%d %B %Y, %I:%M %p")}', small_style),
+        Paragraph(f'Currency: {currency}', small_style),
+    ]]
+    meta_table = Table(meta_data, colWidths=[doc.width / 2, doc.width / 2])
+    meta_table.setStyle(TableStyle([
+        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+    ]))
+    story.append(meta_table)
+    story.append(HRFlowable(width="100%", thickness=1, color=GOLD))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # ── EVENT INFO ────────────────────────────────────────────────────────
+    story.append(Paragraph('Event Details', heading_style))
+    when = event.event_date.strftime('%A, %d %B %Y')
+    if event.event_time:
+        when += f' at {event.event_time.strftime("%H:%M")}'
+    info_rows = [
+        ('Date', when),
+        ('Type', event.get_event_type_display()),
+        ('Location', event.location),
+    ]
+    info_table = Table(
+        [[Paragraph(f'<b>{k}</b>', body_style), Paragraph(v, body_style)] for k, v in info_rows],
+        colWidths=[doc.width * 0.25, doc.width * 0.75]
+    )
+    info_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), LIGHT_GRAY),
+        ('GRID', (0, 0), (-1, -1), 0.3, MID_GRAY),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+    ]))
+    story.append(info_table)
+    story.append(Spacer(1, 0.5 * cm))
+
+    # ── BUDGET ITEMS ──────────────────────────────────────────────────────
+    story.append(Paragraph('Budget Breakdown', heading_style))
+
+    b_rows = [[
+        Paragraph('Category', th_style),
+        Paragraph('Description', th_style),
+        Paragraph('Qty', th_style),
+        Paragraph('Unit Cost', th_style),
+        Paragraph('Subtotal', th_style),
+    ]]
+    grand_total = Decimal('0')
+    for item in items:
+        subtotal = item.subtotal
+        grand_total += subtotal
+        b_rows.append([
+            Paragraph(item.get_category_display(), body_style),
+            Paragraph(item.description or '-', small_style),
+            Paragraph(f'{item.quantity:.2f}', small_style),
+            Paragraph(f'{currency} {item.unit_cost:,.2f}', small_style),
+            Paragraph(f'{currency} {subtotal:,.2f}', body_style),
+        ])
+
+    total_style = ParagraphStyle('EBTotal', fontName='Helvetica-Bold', fontSize=11, textColor=NAVY, alignment=2)
+    b_rows.append([
+        '', '', '',
+        Paragraph('TOTAL', total_style),
+        Paragraph(f'{currency} {grand_total:,.2f}', total_style),
+    ])
+
+    b_table = Table(b_rows, colWidths=[
+        doc.width * 0.22, doc.width * 0.30, doc.width * 0.10,
+        doc.width * 0.19, doc.width * 0.19
+    ], repeatRows=1)
+    b_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), NAVY),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -2), [WHITE, LIGHT_GRAY]),
+        ('BACKGROUND', (0, -1), (-1, -1), GOLD),
+        ('SPAN', (0, -1), (2, -1)),
+        ('GRID', (0, 0), (-1, -2), 0.3, MID_GRAY),
+        ('TOPPADDING', (0, 0), (-1, -1), 7),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (2, 1), (-1, -1), 'RIGHT'),
+    ]))
+    story.append(b_table)
+    story.append(Spacer(1, 0.5 * cm))
+
+    if not len(items):
+        story.append(Paragraph('No budget items have been added yet.', body_style))
+
+    if budget.notes:
+        story.append(Paragraph('Notes', heading_style))
+        story.append(Paragraph(budget.notes.replace('\n', '<br/>'), body_style))
+        story.append(Spacer(1, 0.4 * cm))
+
+    # ── FOOTER ────────────────────────────────────────────────────────────
+    story.append(Spacer(1, 0.6 * cm))
+    story.append(HRFlowable(width="100%", thickness=1, color=GOLD))
+    story.append(Spacer(1, 0.2 * cm))
+    footer_data = [[
+        Paragraph('Campus Impact · TAG SCT Changanyikeni', small_style),
+        Paragraph(f'Report Date: {date.today().strftime("%d %B %Y")}', small_style),
+    ]]
+    footer_table = Table(footer_data, colWidths=[doc.width / 2] * 2)
+    footer_table.setStyle(TableStyle([
+        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+    ]))
+    story.append(footer_table)
+
+    doc.build(story)

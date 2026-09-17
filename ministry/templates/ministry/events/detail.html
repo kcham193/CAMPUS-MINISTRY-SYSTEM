@@ -61,16 +61,19 @@
       </div>
     </div>
 
-    {% if is_admin %}
     <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="{% url 'event_budget_detail' event.pk %}" class="btn-ci btn-ci-outline">
+        <i class="bi bi-cash-stack"></i> Budget
+      </a>
+      {% if is_admin %}
       <a href="{% url 'event_edit' event.pk %}" class="btn-ci btn-ci-outline">
         <i class="bi bi-pencil"></i> Edit
       </a>
       <a href="{% url 'event_delete' event.pk %}" class="btn-ci btn-ci-danger">
         <i class="bi bi-trash"></i>
       </a>
+      {% endif %}
     </div>
-    {% endif %}
   </div>
 </div>
 {% endblock %}

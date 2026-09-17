@@ -6,8 +6,8 @@ from django.http import JsonResponse, HttpResponse
 from datetime import timedelta, date
 import json
 
-from .models import Student, Event, University, Category, MinistryGoal
-from .forms import StudentForm, EventForm, UniversityForm
+from .models import Student, Event, University, Category, MinistryGoal, EventBudget
+from .forms import StudentForm, EventForm, UniversityForm, EventBudgetForm, BudgetItemFormSet
 from .permissions import admin_required
 
 
@@ -221,6 +221,59 @@ def event_delete(request, pk):
         messages.success(request, 'Event deleted.')
         return redirect('event_list')
     return render(request, 'ministry/events/confirm_delete.html', {'event': event})
+
+
+# ─── EVENT BUDGETS ───────────────────────────────────────────────────────────
+
+@login_required
+def event_budget_detail(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    budget = getattr(event, 'budget', None)
+    return render(request, 'ministry/events/budget_detail.html', {
+        'event': event,
+        'budget': budget,
+        'items': budget.items.all() if budget else [],
+    })
+
+
+@admin_required
+def event_budget_edit(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    budget, _ = EventBudget.objects.get_or_create(event=event)
+
+    if request.method == 'POST':
+        form = EventBudgetForm(request.POST, instance=budget)
+        formset = BudgetItemFormSet(request.POST, instance=budget)
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
+            messages.success(request, f'✓ Budget for "{event.title}" saved!')
+            return redirect('event_budget_detail', pk=event.pk)
+    else:
+        form = EventBudgetForm(instance=budget)
+        formset = BudgetItemFormSet(instance=budget)
+
+    return render(request, 'ministry/events/budget_form.html', {
+        'event': event, 'budget': budget,
+        'form': form, 'formset': formset,
+        'title': f'Budget — {event.title}',
+    })
+
+
+@login_required
+def event_budget_pdf(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    budget = getattr(event, 'budget', None)
+    if not budget or not budget.items.exists():
+        messages.error(request, 'This event has no budget items to export yet.')
+        return redirect('event_budget_detail', pk=pk)
+
+    from .pdf_report import generate_event_budget_pdf
+    response = HttpResponse(content_type='application/pdf')
+    safe_title = "".join(c for c in event.title if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+    response['Content-Disposition'] = f'attachment; filename="Budget_{safe_title}_{date.today()}.pdf"'
+    generate_event_budget_pdf(response, event)
+    return response
 
 
 # ─── UNIVERSITIES ────────────────────────────────────────────────────────────

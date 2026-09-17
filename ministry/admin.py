@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Student, Event, University, Category, MinistryGoal
+from .models import Student, Event, University, Category, MinistryGoal, EventBudget, BudgetItem
 
 
 @admin.register(Category)
@@ -36,6 +36,21 @@ class EventAdmin(admin.ModelAdmin):
     list_display = ['title', 'event_type', 'event_date', 'location', 'attended_students', 'is_completed']
     list_filter = ['event_type', 'is_completed']
     date_hierarchy = 'event_date'
+
+
+class BudgetItemInline(admin.TabularInline):
+    model = BudgetItem
+    extra = 1
+
+
+@admin.register(EventBudget)
+class EventBudgetAdmin(admin.ModelAdmin):
+    list_display = ['event', 'currency', 'formatted_total']
+    inlines = [BudgetItemInline]
+
+    def formatted_total(self, obj):
+        return f"{obj.currency} {obj.total_cost:,.2f}"
+    formatted_total.short_description = 'Total Cost'
 
 
 @admin.register(MinistryGoal)

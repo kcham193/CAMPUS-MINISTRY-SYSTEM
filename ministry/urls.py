@@ -18,6 +18,9 @@ urlpatterns = [
     path('events/<int:pk>/', views.event_detail, name='event_detail'),
     path('events/<int:pk>/edit/', views.event_edit, name='event_edit'),
     path('events/<int:pk>/delete/', views.event_delete, name='event_delete'),
+    path('events/<int:pk>/budget/', views.event_budget_detail, name='event_budget_detail'),
+    path('events/<int:pk>/budget/edit/', views.event_budget_edit, name='event_budget_edit'),
+    path('events/<int:pk>/budget/pdf/', views.event_budget_pdf, name='event_budget_pdf'),
 
     # Universities
     path('universities/', views.university_map, name='university_map'),
