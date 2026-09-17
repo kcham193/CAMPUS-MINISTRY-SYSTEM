@@ -25,6 +25,10 @@
             <label>Currency</label>
             {{ form.currency }}
           </div>
+          <div>
+            <label>Expected Participants</label>
+            {{ form.expected_participants }}
+          </div>
         </div>
         <div style="margin-top:18px">
           <label>Overall Notes</label>
@@ -49,8 +53,7 @@
             <tr>
               <th style="min-width:170px">Category</th>
               <th style="min-width:180px">Description</th>
-              <th style="width:90px">Qty</th>
-              <th style="width:130px">Unit Cost</th>
+              <th style="width:130px">Cost</th>
               <th style="min-width:150px">Notes</th>
               <th style="width:50px"></th>
             </tr>
@@ -64,8 +67,7 @@
                 {% if item_form.category.errors %}<div style="color:#e74c3c;font-size:11px">{{ item_form.category.errors.0 }}</div>{% endif %}
               </td>
               <td>{{ item_form.description }}</td>
-              <td>{{ item_form.quantity }}</td>
-              <td>{{ item_form.unit_cost }}</td>
+              <td>{{ item_form.cost }}</td>
               <td>{{ item_form.notes }}</td>
               <td style="text-align:center">
                 <button type="button" class="btn-ci btn-ci-danger" onclick="removeBudgetRow(this)" style="padding:6px 9px">
@@ -96,8 +98,7 @@
         {{ formset.empty_form.category }}
       </td>
       <td>{{ formset.empty_form.description }}</td>
-      <td>{{ formset.empty_form.quantity }}</td>
-      <td>{{ formset.empty_form.unit_cost }}</td>
+      <td>{{ formset.empty_form.cost }}</td>
       <td>{{ formset.empty_form.notes }}</td>
       <td style="text-align:center">
         <button type="button" class="btn-ci btn-ci-danger" onclick="removeBudgetRow(this)" style="padding:6px 9px">
@@ -112,15 +113,29 @@
 
 {% block extra_js %}
 <script>
+  function reindexBudgetRows() {
+    // Keep form indices contiguous (0..N-1) so Django's formset doesn't see
+    // "gaps" left by removed rows and mistake them for invalid submissions.
+    const tbody = document.getElementById('item-rows');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.forEach((tr, idx) => {
+      tr.querySelectorAll('input, select, textarea').forEach(el => {
+        if (el.name) el.name = el.name.replace(/items-\d+-/, `items-${idx}-`);
+        if (el.id) el.id = el.id.replace(/items-\d+-/, `items-${idx}-`);
+      });
+    });
+    const totalFormsInput = document.querySelector('input[name="items-TOTAL_FORMS"]');
+    if (totalFormsInput) totalFormsInput.value = rows.length;
+  }
+
   function addBudgetRow() {
     const tbody = document.getElementById('item-rows');
-    const totalFormsInput = document.querySelector('input[name="items-TOTAL_FORMS"]');
-    const formIdx = parseInt(totalFormsInput.value, 10);
-    const templateHtml = document.getElementById('empty-form-row').innerHTML.replace(/__prefix__/g, formIdx);
+    const nextIdx = tbody.querySelectorAll('tr').length;
+    const templateHtml = document.getElementById('empty-form-row').innerHTML.replace(/__prefix__/g, nextIdx);
     const tr = document.createElement('tr');
     tr.innerHTML = templateHtml;
     tbody.appendChild(tr);
-    totalFormsInput.value = formIdx + 1;
+    reindexBudgetRows();
   }
 
   function removeBudgetRow(btn) {
@@ -131,6 +146,7 @@
       tr.style.display = 'none';
     } else {
       tr.remove();
+      reindexBudgetRows();
     }
   }
 </script>

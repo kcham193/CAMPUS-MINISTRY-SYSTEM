@@ -458,6 +458,7 @@ def generate_event_budget_pdf(output, event):
         ('Date', when),
         ('Type', event.get_event_type_display()),
         ('Location', event.location),
+        ('Expected Participants', str(budget.expected_participants)),
     ]
     info_table = Table(
         [[Paragraph(f'<b>{k}</b>', body_style), Paragraph(v, body_style)] for k, v in info_rows],
@@ -479,44 +480,37 @@ def generate_event_budget_pdf(output, event):
     b_rows = [[
         Paragraph('Category', th_style),
         Paragraph('Description', th_style),
-        Paragraph('Qty', th_style),
-        Paragraph('Unit Cost', th_style),
-        Paragraph('Subtotal', th_style),
+        Paragraph('Cost', th_style),
     ]]
     grand_total = Decimal('0')
     for item in items:
-        subtotal = item.subtotal
-        grand_total += subtotal
+        grand_total += item.cost
         b_rows.append([
             Paragraph(item.get_category_display(), body_style),
             Paragraph(item.description or '-', small_style),
-            Paragraph(f'{item.quantity:.2f}', small_style),
-            Paragraph(f'{currency} {item.unit_cost:,.2f}', small_style),
-            Paragraph(f'{currency} {subtotal:,.2f}', body_style),
+            Paragraph(f'{currency} {item.cost:,.2f}', body_style),
         ])
 
     total_style = ParagraphStyle('EBTotal', fontName='Helvetica-Bold', fontSize=11, textColor=NAVY, alignment=2)
     b_rows.append([
-        '', '', '',
+        '',
         Paragraph('TOTAL', total_style),
         Paragraph(f'{currency} {grand_total:,.2f}', total_style),
     ])
 
     b_table = Table(b_rows, colWidths=[
-        doc.width * 0.22, doc.width * 0.30, doc.width * 0.10,
-        doc.width * 0.19, doc.width * 0.19
+        doc.width * 0.30, doc.width * 0.45, doc.width * 0.25,
     ], repeatRows=1)
     b_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), NAVY),
         ('ROWBACKGROUNDS', (0, 1), (-1, -2), [WHITE, LIGHT_GRAY]),
         ('BACKGROUND', (0, -1), (-1, -1), GOLD),
-        ('SPAN', (0, -1), (2, -1)),
         ('GRID', (0, 0), (-1, -2), 0.3, MID_GRAY),
         ('TOPPADDING', (0, 0), (-1, -1), 7),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 7),
         ('LEFTPADDING', (0, 0), (-1, -1), 8),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('ALIGN', (2, 1), (-1, -1), 'RIGHT'),
+        ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
     ]))
     story.append(b_table)
     story.append(Spacer(1, 0.5 * cm))

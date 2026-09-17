@@ -1,7 +1,7 @@
 
 from decimal import Decimal
 from django.db import models
-from django.db.models import Sum, F, DecimalField
+from django.db.models import Sum, DecimalField
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
@@ -162,6 +162,9 @@ class EventBudget(models.Model):
     """A budget plan attached to a single event."""
     event = models.OneToOneField(Event, on_delete=models.CASCADE, related_name='budget')
     currency = models.CharField(max_length=6, default='TZS')
+    expected_participants = models.PositiveIntegerField(
+        default=0, help_text='Expected number of participants for this budget'
+    )
     notes = models.TextField(blank=True, help_text='Overall notes about this budget')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -173,7 +176,7 @@ class EventBudget(models.Model):
     def total_cost(self):
         result = self.items.aggregate(
             total=Coalesce(
-                Sum(F('quantity') * F('unit_cost')),
+                Sum('cost'),
                 Decimal('0'),
                 output_field=DecimalField(max_digits=14, decimal_places=2),
             )
@@ -197,8 +200,7 @@ class BudgetItem(models.Model):
     budget = models.ForeignKey(EventBudget, on_delete=models.CASCADE, related_name='items')
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
     description = models.CharField(max_length=255, blank=True)
-    quantity = models.DecimalField(max_digits=8, decimal_places=2, default=1)
-    unit_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    cost = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     notes = models.CharField(max_length=255, blank=True)
 
     class Meta:
@@ -206,10 +208,6 @@ class BudgetItem(models.Model):
 
     def __str__(self):
         return f"{self.get_category_display()} — {self.description or 'Item'}"
-
-    @property
-    def subtotal(self):
-        return self.quantity * self.unit_cost
 
 
 class MinistryGoal(models.Model):

@@ -45,7 +45,7 @@ class BudgetItemInline(admin.TabularInline):
 
 @admin.register(EventBudget)
 class EventBudgetAdmin(admin.ModelAdmin):
-    list_display = ['event', 'currency', 'formatted_total']
+    list_display = ['event', 'currency', 'expected_participants', 'formatted_total']
     inlines = [BudgetItemInline]
 
     def formatted_total(self, obj):

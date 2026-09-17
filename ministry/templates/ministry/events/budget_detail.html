@@ -27,7 +27,7 @@
 </div>
 
 {% if items %}
-<div class="grid-3" style="margin-bottom:20px">
+<div class="grid-4" style="margin-bottom:20px">
   <div class="stat-tile fade-up">
     <div class="tile-value" style="font-size:26px;color:var(--gold)">{{ budget.currency }} {{ budget.total_cost|floatformat:2 }}</div>
     <div class="tile-label">Total Estimated Budget</div>
@@ -37,6 +37,10 @@
     <div class="tile-label">Budget Line Items</div>
   </div>
   <div class="stat-tile fade-up fade-up-2">
+    <div class="tile-value" style="font-size:26px">{{ budget.expected_participants }}</div>
+    <div class="tile-label">Expected Participants</div>
+  </div>
+  <div class="stat-tile fade-up fade-up-3">
     <div class="tile-value" style="font-size:26px">{{ budget.currency }}</div>
     <div class="tile-label">Currency</div>
   </div>
@@ -53,9 +57,7 @@
         <tr>
           <th>Category</th>
           <th>Description</th>
-          <th style="text-align:right">Qty</th>
-          <th style="text-align:right">Unit Cost</th>
-          <th style="text-align:right">Subtotal</th>
+          <th style="text-align:right">Cost</th>
         </tr>
       </thead>
       <tbody>
@@ -63,15 +65,13 @@
         <tr>
           <td><span class="badge-ci badge-type">{{ item.get_category_display }}</span></td>
           <td style="color:var(--muted)">{{ item.description|default:"—" }}</td>
-          <td style="text-align:right">{{ item.quantity|floatformat:2 }}</td>
-          <td style="text-align:right">{{ budget.currency }} {{ item.unit_cost|floatformat:2 }}</td>
-          <td style="text-align:right;font-weight:600;color:var(--gold)">{{ budget.currency }} {{ item.subtotal|floatformat:2 }}</td>
+          <td style="text-align:right;font-weight:600;color:var(--gold)">{{ budget.currency }} {{ item.cost|floatformat:2 }}</td>
         </tr>
         {% endfor %}
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="4" style="text-align:right;font-weight:700">TOTAL</td>
+          <td colspan="2" style="text-align:right;font-weight:700">TOTAL</td>
           <td style="text-align:right;font-weight:800;color:var(--gold);font-size:15px">{{ budget.currency }} {{ budget.total_cost|floatformat:2 }}</td>
         </tr>
       </tfoot>

@@ -70,9 +70,10 @@ class EventForm(forms.ModelForm):
 class EventBudgetForm(forms.ModelForm):
     class Meta:
         model = EventBudget
-        fields = ['currency', 'notes']
+        fields = ['currency', 'expected_participants', 'notes']
         widgets = {
             'currency': forms.TextInput(attrs={'placeholder': 'e.g. TZS'}),
+            'expected_participants': forms.NumberInput(attrs={'min': '0', 'placeholder': 'e.g. 50'}),
             'notes': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Overall notes about this budget (optional)'}),
         }
 
@@ -86,11 +87,10 @@ class EventBudgetForm(forms.ModelForm):
 class BudgetItemForm(forms.ModelForm):
     class Meta:
         model = BudgetItem
-        fields = ['category', 'description', 'quantity', 'unit_cost', 'notes']
+        fields = ['category', 'description', 'cost', 'notes']
         widgets = {
             'description': forms.TextInput(attrs={'placeholder': 'Description (optional)'}),
-            'quantity': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
-            'unit_cost': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
+            'cost': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
             'notes': forms.TextInput(attrs={'placeholder': 'Notes (optional)'}),
         }
 
